@@ -65,12 +65,15 @@ class BuildDB(object):
                 mother = mother.strip()
                 sex = sex.strip()
 
-                yield (ind, father, mother, sex)
+                # Create a "Record" object.
+                record = Record(ind, father, mother, sex)
+
+                yield record
 
     def assert_unique_inds(self):
         csv_reader = self.csv_reader()
         # Get all the "ind" records in a list.
-        inds = [record[0] for record in csv_reader]
+        inds = [record.ind for record in csv_reader]
         # This will raise an error if there are duplicate IDs.
         assert len(inds) == len(set(inds)), 'Error: individual IDs in CSV are not unique: %s' % csv
 
@@ -141,7 +144,11 @@ class BuildDB(object):
         '''
         csv_reader = self.csv_reader()
         for record in csv_reader:
-            ind, father, mother, sex = record
+            ind = record.ind
+            father = record.father
+            mother = record.mother
+            sex = record.sex
+
             # Add person to database, labelling the ID and sex.
             self.add_person(ind, sex)
             self.add_child(ind, mother)
