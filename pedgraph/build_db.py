@@ -3,9 +3,10 @@ import logging, argparse
 
 logging.basicConfig(level=logging.INFO)
 
-class PopulateFromCsv(object):
+class BuildDB(object):
     '''
-    The constructor connects to the Neo4j database and populates it with people and relations.
+    The constructor connects to the Neo4j database and populates it with people and relations. It
+    also checks that there are not duplicate individuals.
     '''
 
     def __init__(self, uri, csv, header=True, sep=','):
@@ -151,7 +152,7 @@ class PopulateFromCsv(object):
 
 if __name__ == "__main__":
     # Parse command-line arguments.
-    parser = argparse.ArgumentParser(description='Populate database with information from CSV.')
+    parser = argparse.ArgumentParser(description='Build database, populating it with individuals and relations from a pedigree CSV.')
 
     # Arguments for parser.
     parser.add_argument('--uri', type=str, required=True, help='URI for the Python Neo4j driver to connect to the database.')
@@ -160,7 +161,7 @@ if __name__ == "__main__":
     # Parse input arguments.
     args = parser.parse_args()
 
-    # Call the class to populate the database.
-    populate = PopulateFromCsv(args.uri, args.csv)
+    # Call the class to build the database.
+    build_db = BuildDB(args.uri, args.csv)
     # Close the connection to the database.
-    populate.close()
+    build_db.close()
