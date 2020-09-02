@@ -85,9 +85,12 @@ class PopulateFromCsv(object):
 
     def add_child(self, child, parent):
         '''
-        Find the node corresponding to `ind = [ child ]`, and make a relation that `child` is the child of
-        `parent`. If the node for `parent` does not exist, it will be created. If `parent` is 0, no relation
-        will be added.
+        Add a "child" relationship. Steps:
+        * Find the `child` node
+        * If `parent` does not exist, create it
+        * Make a `[:is_child]` relation from `child` to `parent`
+
+        If `parent` is 0, no relation nor node will be added.
         '''
 
         if parent == '0':
@@ -95,16 +98,20 @@ class PopulateFromCsv(object):
             return None
 
         with self.driver.session() as session:
-            result = session.run("MATCH (child:Person {ind: $child})    "
-                                 "MERGE (child)-[:is_child]->(:Person {ind: $parent})", child=child, parent=parent)
+            result = session.run("MATCH (child:Person {ind: $child})        "
+                                 "MERGE (parent:Person {ind: $parent})      "
+                                 "MERGE (child)-[:is_child]->(parent)       ", child=child, parent=parent)
         return result
 
     def add_parent(self, child, parent, relation):
         '''
-        Find the node corresponding to `ind = [ child ]`, and make a relation that `parent` is the parent of
-        `child`. If the node for `parent` does not exist, it will be created. The relation of `parent` to
-        `child` is one of either `parent`, `mother`, or `father`. If `parent` is 0, no relation will be
-        added.
+        Add a "parent" relationship. Steps:
+        * Find the `child` node
+        * If `parent` does not exist, create it
+        * Make a relation from `parent` to `child`
+
+        If `parent` is 0, no relation nor node will be added. The relation of `parent` to `child` is one of either
+        `is_parent`, `is_mother`, or `is_father`.
         '''
 
         assert relation in ['parent', 'mother', 'father'], 'Error: "relation" must be one of: "parent", "mother", or "father".'
@@ -114,8 +121,9 @@ class PopulateFromCsv(object):
             return None
 
         with self.driver.session() as session:
-            result = session.run("MATCH (child:Person {ind: $child})    "
-                                 "MERGE (child)<-[:is_%s]-(:Person {ind: $parent})" % relation, child=child, parent=parent, relation=relation)
+            result = session.run("MATCH (child:Person {ind: $child})        "
+                                 "MERGE (parent:Person {ind: $parent })     "
+                                 "MERGE (child)<-[:is_%s]-(parent)          " % relation, child=child, parent=parent, relation=relation)
         return result
 
     def populate_from_csv(self):
@@ -131,13 +139,13 @@ class PopulateFromCsv(object):
             ind, father, mother, sex = record
             # Add person to database, labelling the ID and sex.
             self.add_person(ind, sex)
-            #self.add_child(ind, mother)
-            # Add mother and father relationships.
+            self.add_child(ind, mother)
+            ## Add mother and father relationships.
             self.add_parent(ind, mother, 'mother')
-            #self.add_parent(ind, father, 'father')
-            # Add parent relationships as well.
-            #self.add_parent(ind, mother, 'parent')
-            #self.add_parent(ind, father, 'parent')
+            self.add_parent(ind, father, 'father')
+            ## Add parent relationships as well.
+            self.add_parent(ind, mother, 'parent')
+            self.add_parent(ind, father, 'parent')
 
 
 
