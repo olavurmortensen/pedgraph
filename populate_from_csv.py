@@ -8,12 +8,38 @@ class PopulateFromCsv(object):
     def __init__(self, uri, csv, header=True, sep=','):
         self.driver = GraphDatabase.driver(uri)
         self.csv = csv
-        self.header = True
-        self.sep = ','
+        self.header = header
+        self.sep = sep
         self.assert_unique_inds()
 
     def close(self):
         self.driver.close()
+
+    def csv_reader(self):
+        with open(self.csv) as fid:
+            if self.header:
+                fid.readline()
+            for line in fid:
+                # Strip the line of potential whitespace.
+                line = line.strip()
+                # Split the line into fields.
+                line = line.split(self.sep)
+                # In case there are unnecessary fields we remove these.
+                line = line[:4]
+                # Get each field.
+                ind, father, mother, sex = line
+                # Strip fields in case there is whitespace surrounding.
+                ind = ind.strip()
+                father = father.strip()
+                mother = mother.strip()
+                sex = sex.strip()
+
+                yield (ind, father, mother, sex)
+
+    def assert_unique_inds(self):
+        csv_reader = self.csv_reader()
+        inds = [record[0] for record in csv_reader]
+        assert len(inds) == len(set(inds)), 'Error: individual IDs in CSV are not unique: %s' % csv
 
     def add_person(self, ind, sex):
         with self.driver.session() as session:
@@ -44,32 +70,6 @@ class PopulateFromCsv(object):
             result = session.run("MATCH (child:Person {ind: $child})    "
                                  "MERGE (child)<-[:is_%s]-(:Person {ind: $parent})" % relation, child=child, parent=parent, relation=relation)
         return result
-
-    def csv_reader(self):
-        with open(self.csv) as fid:
-            if self.header:
-                fid.readline()
-            for line in fid:
-                # Strip the line of potential whitespace.
-                line = line.strip()
-                # Split the line into fields.
-                line = line.split(self.sep)
-                # In case there are unnecessary fields we remove these.
-                line = line[:4]
-                # Get each field.
-                ind, father, mother, sex = line
-                # Strip fields in case there is whitespace surrounding.
-                ind = ind.strip()
-                father = father.strip()
-                mother = mother.strip()
-                sex = sex.strip()
-
-                yield (ind, father, mother, sex)
-
-    def assert_unique_inds(self):
-        csv_reader = self.csv_reader()
-        inds = [record[0] for record in csv_reader]
-        assert len(inds) == len(set(inds)), 'Error: individual IDs in CSV are not unique: %s' % csv
 
     def populate_from_csv(self):
         csv_reader = self.csv_reader()
