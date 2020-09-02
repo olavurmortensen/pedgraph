@@ -5,8 +5,12 @@ logging.basicConfig(level=logging.INFO)
 
 class PopulateFromCsv(object):
 
-    def __init__(self, uri):
+    def __init__(self, uri, csv, header=True, sep=','):
         self.driver = GraphDatabase.driver(uri)
+        self.csv = csv
+        self.header = True
+        self.sep = ','
+        self.assert_unique_inds()
 
     def close(self):
         self.driver.close()
@@ -41,15 +45,15 @@ class PopulateFromCsv(object):
                                  "MERGE (child)<-[:is_%s]-(:Person {ind: $parent})" % relation, child=child, parent=parent, relation=relation)
         return result
 
-    def csv_reader(self, csv, header=True, sep=','):
-        with open(csv) as fid:
-            if header:
+    def csv_reader(self):
+        with open(self.csv) as fid:
+            if self.header:
                 fid.readline()
             for line in fid:
                 # Strip the line of potential whitespace.
                 line = line.strip()
                 # Split the line into fields.
-                line = line.split(sep)
+                line = line.split(self.sep)
                 # In case there are unnecessary fields we remove these.
                 line = line[:4]
                 # Get each field.
@@ -62,14 +66,13 @@ class PopulateFromCsv(object):
 
                 yield (ind, father, mother, sex)
 
-    def assert_unique_inds(self, csv, header=True, sep=','):
-        csv_reader = self.csv_reader(csv, header, sep)
+    def assert_unique_inds(self):
+        csv_reader = self.csv_reader()
         inds = [record[0] for record in csv_reader]
         assert len(inds) == len(set(inds)), 'Error: individual IDs in CSV are not unique: %s' % csv
 
-    def populate_from_csv(self, csv, header=True, sep=','):
-        self.assert_unique_inds(csv, header, sep)
-        csv_reader = self.csv_reader(csv, header, sep)
+    def populate_from_csv(self):
+        csv_reader = self.csv_reader()
         for record in csv_reader:
             ind, father, mother, sex = record
             # Add person to database, labelling the ID and sex.
@@ -96,9 +99,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Initialize the class.
-    populate = PopulateFromCsv(args.uri)
+    populate = PopulateFromCsv(args.uri, args.csv)
     # Populate the database.
-    populate.populate_from_csv(args.csv)
+    populate.populate_from_csv()
     # Close the connection to the database.
     populate.close()
 
