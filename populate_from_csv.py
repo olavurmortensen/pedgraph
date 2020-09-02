@@ -5,6 +5,7 @@ logging.basicConfig(level=logging.INFO)
 
 class PopulateFromCsv(object):
     '''
+    The constructor connects to the Neo4j database and populates it with people and relations.
     '''
 
     def __init__(self, uri, csv, header=True, sep=','):
@@ -29,6 +30,9 @@ class PopulateFromCsv(object):
 
         # An error will be raised if there are duplicate IDs.
         self.assert_unique_inds()
+
+        # Populate database with nodes (people) and edges (relations).
+        self.populate_from_csv()
 
     def close(self):
         # Close the connection to the database.
@@ -148,10 +152,7 @@ if __name__ == "__main__":
     # Parse input arguments.
     args = parser.parse_args()
 
-    # Initialize the class.
+    # Call the class to populate the database.
     populate = PopulateFromCsv(args.uri, args.csv)
-    # Populate the database.
-    populate.populate_from_csv()
     # Close the connection to the database.
     populate.close()
-
