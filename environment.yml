@@ -1,0 +1,7 @@
+name: pedgraph
+
+channels:
+    - conda-forge
+
+dependencies:
+    - neo4j-python-driver=4.1.1
