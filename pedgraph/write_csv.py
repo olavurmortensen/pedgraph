@@ -1,3 +1,4 @@
+from pedgraph.datastructures import Record
 from neo4j import GraphDatabase
 import logging, argparse, os
 
@@ -128,12 +129,12 @@ class WriteCSV(object):
             else:
                 mother = '0'
 
-            records.append((ind, father, mother, sex))
+            records.append(Record(ind, father, mother, sex))
 
         with open(self.csv, 'w') as fid:
             fid.write('ind,father,mother,sex\n')
             for record in records:
-                row = ','.join(record)
+                row = '%s,%s,%s,%s' %(record.ind, record.father, record.mother, record.sex)
                 fid.write(row + '\n')
 
 
