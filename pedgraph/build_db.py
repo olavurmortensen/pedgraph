@@ -79,6 +79,9 @@ class BuildDB(object):
         If a node with label `Person` and property `ind = [ ind ]` does not exist it will be created.
         Whether or not this node existed, we will give it the property `sex = [ sex ]`.
         '''
+
+        # TODO: consider whether to log everytime a node or edge is created, and when properties
+        # or labels are added to nodes or edges.
         with self.driver.session() as session:
             result = session.run("MERGE (person:Person {ind: $ind}) "
                                  "SET person.sex = $sex", ind=ind, sex=sex)
@@ -94,6 +97,7 @@ class BuildDB(object):
         If `parent` is 0, no relation nor node will be added.
         '''
 
+        # FIXME: not sure if this is necessary, it's going to clutter the log.
         if parent == '0':
             logging.info('Parent is 0 (does not exist). Will not update database.')
             return None
