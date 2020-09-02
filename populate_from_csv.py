@@ -4,30 +4,56 @@ import logging, argparse
 logging.basicConfig(level=logging.INFO)
 
 class PopulateFromCsv(object):
+    '''
+    '''
 
     def __init__(self, uri, csv, header=True, sep=','):
-        self.driver = GraphDatabase.driver(uri)
+        '''
+        Arguments:
+        ----------
+        uri :   String
+            URI for the Python Neo4j driver to connect to the database.
+        csv :   String
+            Path to CSV pedigree file.
+        header  :   Boolean
+            Whether the CSV has a header line or not.
+        sep :   String
+            Separator used in the CSV file.
+        '''
         self.csv = csv
         self.header = header
         self.sep = sep
+
+        # Connect to the database.
+        self.driver = GraphDatabase.driver(uri)
+
+        # An error will be raised if there are duplicate IDs.
         self.assert_unique_inds()
 
     def close(self):
+        # Close the connection to the database.
         self.driver.close()
 
     def csv_reader(self):
+        '''
+        A generator that reads the CSV and yields records in `(ind, father, mother, sex)` tuples.
+        '''
         with open(self.csv) as fid:
             if self.header:
                 fid.readline()
             for line in fid:
                 # Strip the line of potential whitespace.
                 line = line.strip()
+
                 # Split the line into fields.
                 line = line.split(self.sep)
+
                 # In case there are unnecessary fields we remove these.
                 line = line[:4]
+
                 # Get each field.
                 ind, father, mother, sex = line
+
                 # Strip fields in case there is whitespace surrounding.
                 ind = ind.strip()
                 father = father.strip()
@@ -38,16 +64,27 @@ class PopulateFromCsv(object):
 
     def assert_unique_inds(self):
         csv_reader = self.csv_reader()
+        # Get all the "ind" records in a list.
         inds = [record[0] for record in csv_reader]
+        # This will raise an error if there are duplicate IDs.
         assert len(inds) == len(set(inds)), 'Error: individual IDs in CSV are not unique: %s' % csv
 
     def add_person(self, ind, sex):
+        '''
+        If a node with label `Person` and property `ind = [ ind ]` does not exist it will be created.
+        Whether or not this node existed, we will give it the property `sex = [ sex ]`.
+        '''
         with self.driver.session() as session:
             result = session.run("MERGE (person:Person {ind: $ind}) "
                                  "SET person.sex = $sex", ind=ind, sex=sex)
         return result
 
     def add_child(self, child, parent):
+        '''
+        Find the node corresponding to `ind = [ child ]`, and make a relation that `child` is the child of
+        `parent`. If the node for `parent` does not exist, it will be created. If `parent` is 0, no relation
+        will be added.
+        '''
 
         if parent == '0':
             logging.info('Parent is 0 (does not exist). Will not update database.')
@@ -59,6 +96,12 @@ class PopulateFromCsv(object):
         return result
 
     def add_parent(self, child, parent, relation):
+        '''
+        Find the node corresponding to `ind = [ child ]`, and make a relation that `parent` is the parent of
+        `child`. If the node for `parent` does not exist, it will be created. The relation of `parent` to
+        `child` is one of either `parent`, `mother`, or `father`. If `parent` is 0, no relation will be
+        added.
+        '''
 
         assert relation in ['parent', 'mother', 'father'], 'Error: "relation" must be one of: "parent", "mother", or "father".'
 
@@ -72,6 +115,13 @@ class PopulateFromCsv(object):
         return result
 
     def populate_from_csv(self):
+        '''
+        Make a node for each individual, and make all relations. The relations made are of the type:
+        * `[:is_child]`
+        * `[:is_mother]`
+        * `[:is_father]`
+        * `[:is_parent]`
+        '''
         csv_reader = self.csv_reader()
         for record in csv_reader:
             ind, father, mother, sex = record
