@@ -6,6 +6,12 @@ WORKDIR /pedgraph
 
 RUN pip install -e .
 
+# CircleCI will over-write the entry point with:
+# #!/bin/bash -eo pipefail
+# We can use this to preserver the entrypoint. For more information see:
+# https://circleci.com/docs/2.0/custom-images/#adding-an-entrypoint
+LABEL com.circleci.preserve-entrypoint=true
+
 ENTRYPOINT ["python3"]
 
 # If I want to test with "docker run":
