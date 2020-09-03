@@ -5,7 +5,8 @@ orbs:
 
 jobs:
   build-and-test:
-    executor: olavurmortensen/pedgraph
+    docker:
+      - image: olavurmortensen/pedgraph
     steps:
       - run:
           command: ./pedgraph/test/test.py
