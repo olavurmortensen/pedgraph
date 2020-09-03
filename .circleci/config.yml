@@ -9,7 +9,7 @@ jobs:
       - image: olavurmortensen/pedgraph
     steps:
       - run:
-          command: python pedgraph/pedgraph/test/test.py
+          command: python /pedgraph/pedgraph/test/test.py
           name: Test
 
 workflows:
