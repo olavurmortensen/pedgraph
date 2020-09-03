@@ -14,14 +14,13 @@ jobs:
       # Service container image available at `host: localhost`
       - image: neo4j
         entrypoint: /sbin/tini -g -s -- /docker-entrypoint.sh neo4j
-        # Alternatively, workdir can be NEO4J_HOME env variable.
-        working_directory: /var/lib/neo4j
         environment:
           # No user/password needed to connect to DB.
           NEO4J_AUTH: none
+    working_directory: /pedgraph
     steps:
       - run:
-          command: python /pedgraph/pedgraph/test/test.py
+          command: python /pedgraph/test/test.py
           name: Test
 
 workflows:
