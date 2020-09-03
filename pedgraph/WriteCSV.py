@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from pedgraph.DataStructures import Record
 from neo4j import GraphDatabase
 import logging, argparse, os
