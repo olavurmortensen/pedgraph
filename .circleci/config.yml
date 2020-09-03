@@ -20,7 +20,7 @@ jobs:
     working_directory: /pedgraph
     steps:
       - run:
-          command: python /pedgraph/test/test.py
+          command: python pedgraph/test/test.py
           name: Test
 
 workflows:
