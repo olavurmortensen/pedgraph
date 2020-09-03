@@ -11,16 +11,17 @@ from os import environ as env
 class TestSum(unittest.TestCase):
 
     def setUp(self):
-        builder = BuildDB(, )
-        writer = WriteCSV(, )
+        tt = 1
+        #builder = BuildDB(, )
+        #writer = WriteCSV(, )
 
     def test(self):
-        self.assertEqual()
+        self.assertEqual(1, 1)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
-    db_uri = env['NEO4J_BOLT_URI']
-    csv_orig = env['PED_TEST_CSV']
-    csv_rewrite = env['PED_REWRITE_CSV']
+    #db_uri = env['NEO4J_BOLT_URI']
+    #csv_orig = env['PED_TEST_CSV']
+    #csv_rewrite = env['PED_REWRITE_CSV']
     unittest.main()
 
