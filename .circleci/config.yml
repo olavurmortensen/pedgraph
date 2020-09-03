@@ -6,7 +6,16 @@ orbs:
 jobs:
   build-and-test:
     docker:
+      # Primary container image where all commands run
       - image: olavurmortensen/pedgraph
+        environment:
+          NEO4J_URI: bolt://localhost:7687
+
+      # Service container image available at `host: localhost`
+      - image: neo4j
+        environment:
+          # No user/password needed to connect to DB.
+          NEO4J_AUTH: none
     steps:
       - run:
           command: python /pedgraph/pedgraph/test/test.py
