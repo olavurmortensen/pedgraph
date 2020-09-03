@@ -11,7 +11,7 @@ jobs:
       # Service container image available at `host: localhost`
       - image: neo4j
         entrypoint: /bin/bash
-        command: -c /sbin/tini -g -s -v -- /docker-entrypoint.sh neo4j
+        command: -c "/sbin/tini -g -s -v -- /docker-entrypoint.sh neo4j"
         environment:
           # No user/password needed to connect to DB.
           NEO4J_AUTH: none
