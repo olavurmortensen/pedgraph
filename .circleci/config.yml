@@ -13,7 +13,7 @@ jobs:
 
       # Service container image available at `host: localhost`
       - image: neo4j
-        entrypoint: tini -g -s /docker-entrypoint.sh
+        entrypoint: tini -g -s /docker-entrypoint.sh neo4j
         environment:
           # No user/password needed to connect to DB.
           NEO4J_AUTH: none
