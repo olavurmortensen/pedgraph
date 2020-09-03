@@ -5,12 +5,9 @@ orbs:
 
 jobs:
   build-and-test:
-    executor: python/default
+    docker:
+      - image: olavurmortensen/pedgraph
     steps:
-      - checkout
-      - python/load-cache
-      - python/install-deps
-      - python/save-cache
       - run:
           command: ./pedgraph/test/test.py
           name: Test
