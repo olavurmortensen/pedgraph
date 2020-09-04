@@ -39,6 +39,7 @@ class BuildDB(object):
         self.populate_from_csv()
 
         self.label_founders()
+        self.label_leaves()
 
         self.pedstats()
 
@@ -158,7 +159,9 @@ class BuildDB(object):
 
             # Add person to database, labelling the ID and sex.
             self.add_person(ind, sex)
+            # Add child relationships.
             self.add_child(ind, mother)
+            self.add_child(ind, father)
             ## Add mother and father relationships.
             self.add_parent(ind, mother, 'mother')
             self.add_parent(ind, father, 'father')
@@ -173,6 +176,14 @@ class BuildDB(object):
         '''
         with self.driver.session() as session:
             result = session.run('MATCH (p:Person) WHERE NOT (p)-[:is_child]->() SET p:Founder')
+
+    def label_leaves(self):
+        '''
+        Find leaves and add labels. For each person that does not have a child defined by a `is_child` relationship,
+        add a new label `:Leaf`. The new label does not overwrite the existing label(s).
+        '''
+        with self.driver.session() as session:
+            result = session.run('MATCH (p:Person) WHERE NOT (p)<-[:is_child]-() SET p:Leaf')
 
     def pedstats(self):
         with self.driver.session() as session:
@@ -189,6 +200,9 @@ class BuildDB(object):
 
             result = session.run('MATCH (p:Founder) RETURN p.ind')
             logging.info('#Founders: %d' % len(result.values()))
+
+            result = session.run('MATCH (p:Leaf) RETURN p.ind')
+            logging.info('#Leaves: %d' % len(result.values()))
 
 
 
