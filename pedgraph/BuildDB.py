@@ -38,9 +38,11 @@ class BuildDB(object):
         # Populate database with nodes (people) and edges (relations).
         self.populate_from_csv()
 
+        # Add labels to pedigree.
         self.label_founders()
         self.label_leaves()
 
+        # Print some statistics.
         self.pedstats()
 
     def close(self):
@@ -189,20 +191,31 @@ class BuildDB(object):
         with self.driver.session() as session:
             logging.info('NODE STATS')
 
-            result = session.run('MATCH (p:Person) RETURN p.ind')
+            result = session.run('MATCH (p:Person) RETURN p')
             logging.info('#Persons: %d' % len(result.values()))
 
-            result = session.run('MATCH (p:Person {sex: "F"}) RETURN p.ind')
+            result = session.run('MATCH (p:Person {sex: "F"}) RETURN p')
             logging.info('#Females: %d' % len(result.values()))
 
-            result = session.run('MATCH (p:Person {sex: "M"}) RETURN p.ind')
+            result = session.run('MATCH (p:Person {sex: "M"}) RETURN p')
             logging.info('#Males: %d' % len(result.values()))
 
-            result = session.run('MATCH (p:Founder) RETURN p.ind')
+            result = session.run('MATCH (p:Founder) RETURN p')
             logging.info('#Founders: %d' % len(result.values()))
 
-            result = session.run('MATCH (p:Leaf) RETURN p.ind')
+            result = session.run('MATCH (p:Leaf) RETURN p')
             logging.info('#Leaves: %d' % len(result.values()))
+
+            logging.info('EDGE STATS')
+
+            result = session.run('MATCH ()-[r:is_child]->() RETURN r')
+            logging.info('#is_child: %d' % len(result.values()))
+
+            result = session.run('MATCH ()-[r:is_mother]->() RETURN r')
+            logging.info('#is_mother: %d' % len(result.values()))
+
+            result = session.run('MATCH ()-[r:is_father]->() RETURN r')
+            logging.info('#is_father: %d' % len(result.values()))
 
 
 
