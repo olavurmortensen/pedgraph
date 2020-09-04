@@ -110,6 +110,10 @@ class BuildDB(object):
         If `parent` is 0, no relation nor node will be added.
         '''
 
+	# ID '0' means the person does not exist. Relationship will not be added.
+        if parent == '0':
+            return None
+
         with self.driver.session() as session:
             result = session.run("MATCH (child:Person {ind: $child})        "
                                  "MERGE (parent:Person {ind: $parent})      "
@@ -128,6 +132,10 @@ class BuildDB(object):
         '''
 
         assert relation in ['parent', 'mother', 'father'], 'Error: "relation" must be one of: "parent", "mother", or "father".'
+
+	# ID '0' means the person does not exist. Relationship will not be added.
+        if parent == '0':
+            return None
 
         with self.driver.session() as session:
             result = session.run("MATCH (child:Person {ind: $child})        "
