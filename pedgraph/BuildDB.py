@@ -12,7 +12,7 @@ class BuildDB(object):
     also checks that there are not duplicate individuals.
     '''
 
-    def __init__(self, uri, csv, header=True, sep=','):
+    def __init__(self, uri, csv, header=True, sep=',', na_id='0'):
         '''
         Arguments:
         ----------
@@ -24,10 +24,13 @@ class BuildDB(object):
             Whether the CSV has a header line or not.
         sep :   String
             Separator used in the CSV file.
+        na_id :   String
+            ID used for missing parents.
         '''
         self.csv = csv
         self.header = header
         self.sep = sep
+        self.na_id = na_id
 
         # Connect to the database.
         self.driver = GraphDatabase.driver(uri)
@@ -107,11 +110,11 @@ class BuildDB(object):
         * If `parent` does not exist, create it
         * Make a `[:is_child]` relation from `child` to `parent`
 
-        If `parent` is 0, no relation nor node will be added.
+        If `parent` is `na_id`, no relation nor node will be added.
         '''
 
 	# ID '0' means the person does not exist. Relationship will not be added.
-        if parent == '0':
+        if parent == self.na_id:
             return None
 
         with self.driver.session() as session:
@@ -127,14 +130,14 @@ class BuildDB(object):
         * If `parent` does not exist, create it
         * Make a relation from `parent` to `child`
 
-        If `parent` is 0, no relation nor node will be added. The relation of `parent` to `child` is one of either
+        If `parent` is `na_id`, no relation nor node will be added. The relation of `parent` to `child` is one of either
         `is_parent`, `is_mother`, or `is_father`.
         '''
 
         assert relation in ['parent', 'mother', 'father'], 'Error: "relation" must be one of: "parent", "mother", or "father".'
 
 	# ID '0' means the person does not exist. Relationship will not be added.
-        if parent == '0':
+        if parent == self.na_id:
             return None
 
         with self.driver.session() as session:
@@ -226,11 +229,14 @@ if __name__ == "__main__":
     # Arguments for parser.
     parser.add_argument('--uri', type=str, required=True, help='URI for the Python Neo4j driver to connect to the database.')
     parser.add_argument('--csv', type=str, required=True, help='Path to CSV pedigree file.')
+    parser.add_argument('--header', type=bool, required=False, default=True, help='Whether or not the CSV has a header.')
+    parser.add_argument('--sep', type=str, required=False, default=',', help='Separator used in the CSV.')
+    parser.add_argument('--na_id', type=str, required=False, default='0', help='The ID used for missing parents.')
 
     # Parse input arguments.
     args = parser.parse_args()
 
     # Call the class to build the database.
-    build_db = BuildDB(args.uri, args.csv)
+    build_db = BuildDB(args.uri, args.csv, args.header, args.sep, args.na_id)
     # Close the connection to the database.
     build_db.close()
