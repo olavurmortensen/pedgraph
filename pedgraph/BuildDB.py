@@ -38,6 +38,10 @@ class BuildDB(object):
         # Populate database with nodes (people) and edges (relations).
         self.populate_from_csv()
 
+        self.label_founders()
+
+        self.pedstats()
+
     def close(self):
         # Close the connection to the database.
         self.driver.close()
@@ -161,6 +165,31 @@ class BuildDB(object):
             ## Add parent relationships as well.
             self.add_parent(ind, mother, 'parent')
             self.add_parent(ind, father, 'parent')
+
+    def label_founders(self):
+        '''
+        Find founders and add labels. For each person that does not have a parent defined by a `is_child` relationship,
+        add a new label `:Founder`. The new label does not overwrite the existing label(s).
+        '''
+        with self.driver.session() as session:
+            result = session.run('MATCH (p:Person) WHERE NOT (p)-[:is_child]->() SET p:Founder')
+
+    def pedstats(self):
+        with self.driver.session() as session:
+            logging.info('NODE STATS')
+
+            result = session.run('MATCH (p:Person) RETURN p.ind')
+            logging.info('#Persons: %d' % len(result.values()))
+
+            result = session.run('MATCH (p:Person {sex: "F"}) RETURN p.ind')
+            logging.info('#Females: %d' % len(result.values()))
+
+            result = session.run('MATCH (p:Person {sex: "M"}) RETURN p.ind')
+            logging.info('#Males: %d' % len(result.values()))
+
+            result = session.run('MATCH (p:Founder) RETURN p.ind')
+            logging.info('#Founders: %d' % len(result.values()))
+
 
 
 
