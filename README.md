@@ -1,4 +1,4 @@
-# PedGraph -- Multidimensional network database for pedigree analysis
+# PedGraph -- Multilayer network database for pedigree analysis
 
 ## Install
 
