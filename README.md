@@ -37,8 +37,8 @@ To build the database, use the `BuildDB()` class, supplying the URI to the Neo4j
 Below, we import the `BuildDB()` in Python, and build the database using one of the test trees in the PedGraph project.
 
 ```python
-from pedgraph.BuildDB import BuildDB
-BuildDB('bolt://0.0.0.0:7687', 'pedgraph/test/test_data/test_tree2.csv')
+>>> from pedgraph.BuildDB import BuildDB
+>>> BuildDB('bolt://0.0.0.0:7687', 'pedgraph/test/test_data/test_tree2.csv')
 ```
 
 Alternatively, you can run the script from the command-line.
@@ -47,4 +47,47 @@ Alternatively, you can run the script from the command-line.
 python pedgraph/BuildDB.py --uri bolt://0.0.0.0:7687 --csv pedgraph/test/test_data/test_tree2.csv
 ```
 
+## Basic database queries
+
+Below, we us the Neo4j API to connect to the database.
+
+```python
+>>> from neo4j import GraphDatabase
+>>> driver = GraphDatabase.driver('bolt://0.0.0.0:7687')
+>>> session = driver.session()
+```
+
+Below we find all child-parent relationships, and return the ID of the child and parent of all these.
+
+```
+>>> result = session.run('MATCH (child:Person)-[:is_child]->(parent) RETURN child.ind, parent.ind')
+>>> from pprint import pprint
+>>> pprint(result.values())
+[['1', '11'],
+ ['5', '1'],
+ ['5', '2'],
+ ['6', '1'],
+ ['6', '2'],
+ ['7', '3'],
+ ['7', '4'],
+ ['8', '3'],
+ ['8', '4'],
+ ['9', '5'],
+ ['9', '8'],
+ ['10', '6'],
+ ['10', '7']]
+```
+
+Below, we find all the ancestors of a particular person.
+
+```python
+>>> session.run('MATCH (p:Person {ind: "9"})-[:is_child*]->(a) RETURN a.ind').values()
+[['8'], ['4'], ['3'], ['5'], ['2'], ['1'], ['11']]
+```
+
+See e.g. [here](https://neo4j.com/developer/cypher/) for more information about Neo4j queries.
+
+## Reconstruct genealogy
+
+**TODO**
 
