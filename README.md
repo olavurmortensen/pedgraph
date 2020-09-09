@@ -47,6 +47,27 @@ Alternatively, you can run the script from the command-line.
 python pedgraph/BuildDB.py --uri bolt://0.0.0.0:7687 --csv pedgraph/test/test_data/test_tree2.csv
 ```
 
+## Reconstruct genealogies
+
+Say you want to analyze the genealogy of a set of individuals, probands in a cohort perhaps. Further, say you want to do this in some other software, typically you want this data in CSV format with `ind,father,mother,sex` columns. This is where this class comes in handy.
+
+Below is an example where we use the `ReconstructGenealogy` class to build the genealogical tree of two individuals (in this context referred to as "probands").
+
+```python
+>>> from pedgraph.ReconstructGenealogy import ReconstructGenealogy
+>>> gen = ReconstructGenealogy('bolt://0.0.0.0:7687', probands=['9', '10'])
+INFO:root:Reconstrucing genealogy of 3 probands.
+INFO:root:Found 9 ancestors.
+INFO:root:Building a genealogy with 11 individuals.
+INFO:root:Number of individuals in reconstructed genealogy: 11
+```
+
+The output, the `gen` object, is a member of the `Genealogy` class. This class implements a `write_csv` method, such that we can store this genealogy in a standard CSV pedigree file.
+
+```python
+gen.write_csv('testgen.csv')
+```
+
 ## Basic database queries
 
 Below, we us the Neo4j API to connect to the database.
@@ -93,8 +114,3 @@ Count how many descendants each person has.
 ```
 
 See e.g. [here](https://neo4j.com/developer/cypher/) for more information about Neo4j queries.
-
-## Reconstruct genealogy
-
-**TODO**
-
