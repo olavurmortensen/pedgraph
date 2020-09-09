@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 
 class WriteCSV(object):
     '''
-    The constructor connects to the Neo4j database, all individuals, their mother and father
+    The constructor connects to the Neo4j database, retrieves all individuals, their mother and father
     relationships, their sex, and writes this to a CSV.
     '''
 
