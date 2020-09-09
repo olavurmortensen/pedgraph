@@ -40,6 +40,22 @@ class Genealogy(object):
     def add(self, record):
         self[record.ind] = record
 
-    def write_csv(self):
-        # Might be a good idea to have the code for writing CSV here instead.
-        tt = 0
+    def __iter__(self):
+        for record in self.data.values():
+            yield record
+
+    def write_csv(self, csv_path, header=True, sep=','):
+        '''
+        csv_path    :   String
+            Path to CSV pedigree file.
+        header  :   Boolean
+            Whether the CSV has a header line or not.
+        sep :   String
+            Separator used in the CSV file.
+        '''
+        with open(csv_path, 'w') as fid:
+            fid.write('ind,father,mother,sex\n')
+            for record in self:
+                row = '%s,%s,%s,%s' %(record.ind, record.father, record.mother, record.sex)
+                fid.write(row + '\n')
+
