@@ -39,6 +39,16 @@ Below, we import the `BuildDB()` in Python, and build the database using one of 
 ```python
 >>> from pedgraph.BuildDB import BuildDB
 >>> BuildDB('bolt://0.0.0.0:7687', 'pedgraph/test/test_data/test_tree2.csv')
+INFO:root:NODE STATS
+INFO:root:#Persons: 11
+INFO:root:#Females: 6
+INFO:root:#Males: 5
+INFO:root:#Founders: 4
+INFO:root:#Leaves: 2
+INFO:root:EDGE STATS
+INFO:root:#is_child: 13
+INFO:root:#is_mother: 6
+INFO:root:#is_father: 7
 ```
 
 Alternatively, you can run the script from the command-line.
