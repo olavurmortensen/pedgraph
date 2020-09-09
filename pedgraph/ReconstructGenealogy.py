@@ -6,7 +6,7 @@ import logging, argparse, os
 
 logging.basicConfig(level=logging.INFO)
 
-class ReconstructGenealogy(object):
+class ReconstructGenealogy(Genealogy):
     '''
     '''
 
@@ -21,6 +21,9 @@ class ReconstructGenealogy(object):
         probands_txt    :   String
             Path to a file with individual IDs. One line per ID, with no header.
         '''
+
+        # Call super-class constructor to initalize genealogy.
+        super(ReconstructGenealogy, self).__init__()
 
         assert probands is not None or probands_txt is not None, 'Error: neither ID list or file supplied.'
         assert probands is None or probands_txt is None, 'Error: ID list and ID file supplied. Supply only one.'
@@ -118,9 +121,6 @@ class ReconstructGenealogy(object):
 
         logging.info('Building a genealogy with %d individuals.' % len(records))
 
-        # Initialize the Genealogy class to store the records in.
-        gen = Genealogy()
-
         for rec in records:
             # Get fields from record.
             ind, father, mother, sex = rec
@@ -135,11 +135,9 @@ class ReconstructGenealogy(object):
             # Construct a Record class for the current record.
             record = Record(ind, father, mother, sex)
             # Add record to genealogy.
-            gen.add(record)
+            self.add(record)
 
-        logging.info('Number of individuals in reconstructed genealogy: %d' % gen.size)
-
-        self.gen = gen
+        logging.info('Number of individuals in reconstructed genealogy: %d' % self.size)
 
 
 
