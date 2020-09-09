@@ -85,6 +85,13 @@ Below, we find all the ancestors of a particular person.
 [['8'], ['4'], ['3'], ['5'], ['2'], ['1'], ['11']]
 ```
 
+Count how many descendants each person has.
+
+```python
+>>> session.run('MATCH (p:Person)-[:is_child*]->(a) RETURN a.ind, count(*)').values()
+[['11', 5], ['2', 4], ['1', 4], ['4', 4], ['3', 4], ['8', 1], ['5', 1], ['7', 1], ['6', 1]]
+```
+
 See e.g. [here](https://neo4j.com/developer/cypher/) for more information about Neo4j queries.
 
 ## Reconstruct genealogy
