@@ -4,7 +4,6 @@ python:
   - "3.6"
 
 services:
-  #- neo4j
   - docker
 
 env:
@@ -18,5 +17,5 @@ install:
 
 script:
   - docker run -d -p7474:7474 -p7687:7687 --env=NEO4J_AUTH=none neo4j
-  - sleep 100
+  - sleep 20  # Wait for neo4j database to start up.
   - python pedgraph/test/test.py
