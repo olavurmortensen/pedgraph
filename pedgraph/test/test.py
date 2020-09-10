@@ -5,7 +5,6 @@
 
 from neo4j import GraphDatabase
 from pedgraph.BuildDB import BuildDB
-from pedgraph.WriteCSV import WriteCSV
 import unittest, logging
 from os import environ as env
 
@@ -21,7 +20,6 @@ class TestSum(unittest.TestCase):
     def setUp(self):
         tt = 1
         #builder = BuildDB(, )
-        #writer = WriteCSV(, )
 
     def test_db_connection(self):
         driver = GraphDatabase.driver(NEO4J_URI)
@@ -36,4 +34,3 @@ class TestSum(unittest.TestCase):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     unittest.main()
-
