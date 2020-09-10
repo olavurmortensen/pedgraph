@@ -1,5 +1,7 @@
 # PedGraph -- Multilayer network database for pedigree analysis
 
+[![Travis CI build](https://api.travis-ci.org/olavurmortensen/pedgraph.svg?branch=master&status=passed)](https://api.travis-ci.org/olavurmortensen/pedgraph)
+
 ## Install
 
 For now, we install via `pip`. Clone repo:
