@@ -93,19 +93,47 @@ class Genealogy(object):
         for record in self.data.values():
             yield record
 
-    def write_csv(self, csv_path, header=True, sep=','):
+    def write_csv(self, csv_path):
         '''
         Write all records in genealogy to a CSV file, in a random order.
 
         csv_path    :   String
             Path to CSV pedigree file.
-        header  :   Boolean
-            Whether the CSV has a header line or not.
-        sep :   String
-            Separator used in the CSV file.
         '''
         with open(csv_path, 'w') as fid:
             fid.write('ind,father,mother,sex\n')
             for record in self:
                 row = '%s,%s,%s,%s' %(record.ind, record.father, record.mother, record.sex)
                 fid.write(row + '\n')
+
+    def read_csv(self, csv_path, header=True, sep=','):
+        '''
+        Reads records from a CSV file and adds them to the genealogy.
+        '''
+        with open(csv_path) as fid:
+            if header:
+                fid.readline()
+            for line in fid:
+                # Strip the line of potential whitespace.
+                line = line.strip()
+
+                # Split the line into fields.
+                line = line.split(sep)
+
+                # In case there are unnecessary fields we remove these.
+                line = line[:4]
+
+                # Get each field.
+                ind, father, mother, sex = line
+
+                # Strip fields in case there is whitespace surrounding.
+                ind = ind.strip()
+                father = father.strip()
+                mother = mother.strip()
+                sex = sex.strip()
+
+                # Create a "Record" object.
+                record = Record(ind, father, mother, sex)
+
+                # Add record to genealogy.
+                self.add(record)
