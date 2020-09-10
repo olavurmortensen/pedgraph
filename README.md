@@ -1,6 +1,6 @@
 # PedGraph -- Multilayer network database for pedigree analysis
 
-[![Travis CI build](https://api.travis-ci.org/olavurmortensen/pedgraph.svg?branch=master&status=passed)](https://api.travis-ci.org/olavurmortensen/pedgraph)
+[![Travis CI build](https://api.travis-ci.org/olavurmortensen/pedgraph.svg?branch=master&status=passed)](https://api.travis-ci.org/olavurmortensen/pedgraph) [![Docker build](https://img.shields.io/badge/Docker%20build-Available-informational)](https://hub.docker.com/repository/docker/olavurmortensen/pedgraph)
 
 ## Install
 
