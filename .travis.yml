@@ -1,0 +1,13 @@
+dist: bionic
+language: python
+python:
+  - "3.6"
+
+services:
+  - neo4j
+
+install:
+  - pip install -e .
+
+script:
+  - python pedgraph/test/test.py
