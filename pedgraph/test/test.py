@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-# TODO:
-# Write to DB, read from DB, write to CSV, and compare with original CSV.
-
 from neo4j import GraphDatabase
 from pedgraph.BuildDB import BuildDB
+from pedgraph.ReconstructGenealogy import ReconstructGenealogy
 import unittest, logging
 from os import environ as env
 
@@ -18,18 +16,18 @@ if NEO4J_URI is None:
 class TestSum(unittest.TestCase):
 
     def setUp(self):
-        tt = 1
-        #builder = BuildDB(, )
+        logging.info('Startup')
+        logging.info('-------')
+        builder = BuildDB(NEO4J_URI, 'pedgraph/test/test_data/test_tree.csv')
 
-    def test_db_connection(self):
-        driver = GraphDatabase.driver(NEO4J_URI)
-        driver.close()
-
-    def test(self):
-        self.assertEqual(1, 1)
+    def test_recon(self):
+        logging.info('Reconstructing genealogy')
+        logging.info('------------------------')
+        gen = ReconstructGenealogy(NEO4J_URI, probands=['9', '10'])
 
     def tearDown(self):
-        tt = 1
+        logging.info('-------')
+        logging.info('Teardown')
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
