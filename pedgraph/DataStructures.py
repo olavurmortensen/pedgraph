@@ -4,6 +4,21 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
+def check_type(arg, argname, correct_type):
+    '''
+    Check that the value of a variable is the correct type.
+
+    arg :   ???
+        The value to check.
+    argname :   String
+        The name of the argument (for error printing purposes).
+    correct_type:   Type
+        The correct type for the argument.
+    '''
+    assert isinstance(arg, correct_type), \
+            'Error: ID "%s" is of type "%s" but should be type "%s". Offending value: %s' \
+            %(argname, type(arg).__name__, correct_type.__name__, arg)
+
 class Record(object):
     '''
     Class defines all essential information for a single individual. The option
@@ -16,10 +31,20 @@ class Record(object):
     sex :   String
     '''
     def __init__(self, ind=None, father=None, mother=None, sex=None):
+        if ind is not None:
+            check_type(ind, 'ind', str)
+        if father is not None:
+            check_type(father, 'father', str)
+        if mother is not None:
+            check_type(mother, 'mother', str)
+        if sex is not None:
+            check_type(sex, 'sex', str)
+
         self.ind = ind
         self.father = father
         self.mother = mother
         self.sex = sex
+
 
 class Genealogy(object):
     '''
@@ -32,6 +57,9 @@ class Genealogy(object):
         self.size = 0  # Number of individuals in genealogy.
 
     def __setitem__(self, key, value):
+        check_type(key, 'key', str)
+        check_type(value, 'value', Record)
+
         # If the key already exists in the dictionary, the value will be overwritten, and the
         # size of the genealogy will not be updated.
         overwrite = False
@@ -55,6 +83,7 @@ class Genealogy(object):
         return self[ind]
 
     def add(self, record):
+        check_type(record, 'record', Record)
         self[record.ind] = record
 
     def __iter__(self):
