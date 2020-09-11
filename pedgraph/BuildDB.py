@@ -3,7 +3,7 @@
 from pedgraph.DataStructures import Record
 from neo4j import GraphDatabase
 import logging, argparse
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 logging.basicConfig(level=logging.INFO)
 
