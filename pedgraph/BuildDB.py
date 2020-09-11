@@ -3,6 +3,7 @@
 from pedgraph.DataStructures import Record
 from neo4j import GraphDatabase
 import logging, argparse
+from tqdm import tqdm
 
 logging.basicConfig(level=logging.INFO)
 
@@ -37,6 +38,12 @@ class BuildDB(object):
 
         # An error will be raised if there are duplicate IDs.
         self.assert_unique_inds()
+
+        # Count number of records in CSV.
+        n_records = 0
+        for _ in self.csv_reader():
+            n_records += 1
+        self.n_records = n_records
 
         # Populate database with nodes (people) and edges (relations).
         self.populate_from_csv()
@@ -155,23 +162,29 @@ class BuildDB(object):
         * `[:is_parent]`
         '''
         csv_reader = self.csv_reader()
-        for record in csv_reader:
-            ind = record.ind
-            father = record.father
-            mother = record.mother
-            sex = record.sex
+        logging.info('Building database')
+        # Using tqdm progress bar.
+        with tqdm(total=self.n_records, desc='Progress') as pbar:
+            for record in tqdm(csv_reader):
+                ind = record.ind
+                father = record.father
+                mother = record.mother
+                sex = record.sex
 
-            # Add person to database, labelling the ID and sex.
-            self.add_person(ind, sex)
-            # Add child relationships.
-            self.add_child(ind, mother)
-            self.add_child(ind, father)
-            ## Add mother and father relationships.
-            self.add_parent(ind, mother, 'mother')
-            self.add_parent(ind, father, 'father')
-            ## Add parent relationships as well.
-            self.add_parent(ind, mother, 'parent')
-            self.add_parent(ind, father, 'parent')
+                # Add person to database, labelling the ID and sex.
+                self.add_person(ind, sex)
+                # Add child relationships.
+                self.add_child(ind, mother)
+                self.add_child(ind, father)
+                ## Add mother and father relationships.
+                self.add_parent(ind, mother, 'mother')
+                self.add_parent(ind, father, 'father')
+                ## Add parent relationships as well.
+                self.add_parent(ind, mother, 'parent')
+                self.add_parent(ind, father, 'parent')
+
+                # Increment progress bar iteration counter.
+                pbar.update()
 
     def label_founders(self):
         '''
