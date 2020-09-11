@@ -1,6 +1,12 @@
-# PedGraph -- Multilayer network database for pedigree analysis
+# PedGraph -- Multilayer network database for pedigree analysis [WIP]
 
 [![Travis CI build](https://api.travis-ci.org/olavurmortensen/pedgraph.svg?branch=master&status=passed)](https://travis-ci.org/github/olavurmortensen/pedgraph) [![Docker build](https://img.shields.io/badge/Docker%20build-Available-informational)](https://hub.docker.com/repository/docker/olavurmortensen/pedgraph)
+
+**NOTE:** This project is a work in progress.
+
+PedGraph is a data management and analysis tool for genealogical data. It uses a [graph database](https://neo4j.com/developer/graph-database/) represent information about individuals and their relationships. Using a graph database allows us to make arbitrarily complex queries, like *give me all pairs of individuals whose most recent common ancestor was born after 1800*, or *for each founder find all descendants born after 1940 and return the count*.
+
+PedGraph is implemented in Python3, and uses the [Neo4j](https://neo4j.com/) database.
 
 ## Install
 
