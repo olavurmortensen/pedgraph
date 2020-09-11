@@ -3,7 +3,8 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-INSTALL_REQUIRES = ['neo4j-driver>=4.1.1',]
+INSTALL_REQUIRES = ['neo4j-driver>=4.1.1',
+                    'tqdm==4.48.2']
 
 setuptools.setup(
     name="pedgraph",
