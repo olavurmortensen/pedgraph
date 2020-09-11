@@ -1,12 +1,17 @@
-# PedGraph -- Multilayer network database for pedigree analysis [WIP]
+# PedGraph -- Multilayer networks for pedigree analysis [WIP]
 
 [![Travis CI build](https://api.travis-ci.org/olavurmortensen/pedgraph.svg?branch=master&status=passed)](https://travis-ci.org/github/olavurmortensen/pedgraph) [![Docker build](https://img.shields.io/badge/Docker%20build-Available-informational)](https://hub.docker.com/repository/docker/olavurmortensen/pedgraph)
 
 **NOTE:** This project is a work in progress.
 
-PedGraph is a data management and analysis tool for genealogical data. It uses a [graph database](https://neo4j.com/developer/graph-database/) represent information about individuals and their relationships. Using a graph database allows us to make arbitrarily complex queries, like *give me all pairs of individuals whose most recent common ancestor was born after 1800*, or *for each founder find all descendants born after 1940 and return the count*.
+PedGraph is a data management and analysis tool for genealogical data. It uses a [graph database](https://neo4j.com/developer/graph-database/) represent information about individuals and their relationships. Using a graph database allows us to make arbitrarily complex queries about relationships and individuals simultaneously. For example, provided you have birth year and phenotype information available, you could ask question like these:
 
-PedGraph is implemented in Python3, and uses the [Neo4j](https://neo4j.com/) database.
+* *Give me all pairs of individuals whose most recent common ancestor was born after 1800*
+* *For each founder count the descendants affected by cystic fibrosis*
+
+The database queries in general take the form of `(child)-[:is_child]-(parent)`, you could for example query `(descendant {ind: "1")-[:is_child*]-(ancestor:Founder)` to find all ancestors of individual `"1"` who are founders.
+
+PedGraph is implemented in Python3, and uses the [Neo4j](https://neo4j.com/) database. To use PedGraph you need to install it from source and be able to connect to a Neo4j database.
 
 ## Install
 
@@ -35,7 +40,10 @@ pip install -e .
 The easiest way to run the Neo4j database is via Docker:
 
 ```bash
-docker run -d -p7474:7474 -p7687:7687 --env=NEO4J_AUTH=none neo4j
+# Make a folder to store database dumps in.
+mkdir neo4j_data
+# Run database.
+docker run -d -p7474:7474 -p7687:7687 --env=NEO4J_AUTH=none neo4j --volume=neo4j_data:/data
 ```
 
 ## Build database
