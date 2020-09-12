@@ -65,6 +65,10 @@ class BuildDB(object):
                                  "MERGE (mother)-[:is_mother]->(person)             "
                                  "RETURN line                                       ", csv_file=self.csv)
 
+            # Detach all connections to non-existent parent "na_id", and delete the "na_id" node.
+            # NOTE: this could be avoided using some sort of if-statement above, but this is so easy.
+            result = session.run('MATCH (p {ind: $na_id}) DETACH DELETE p', na_id=self.na_id)
+
     def label_founders(self):
         '''
         Find founders and add labels. For each person that does not have a parent defined by a `is_child` relationship,
