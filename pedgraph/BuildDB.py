@@ -37,7 +37,6 @@ class BuildDB(object):
         self.n_records = n_records
 
         # Populate database with nodes (people) and edges (relations).
-        #self.populate_from_csv()
         self.load_csv()
 
         # Add labels to pedigree.
@@ -50,127 +49,6 @@ class BuildDB(object):
     def close(self):
         # Close the connection to the database.
         self.driver.close()
-
-    def csv_reader(self):
-        '''
-        A generator that reads the CSV and yields records in `(ind, father, mother, sex)` tuples.
-        '''
-        with open(self.csv) as fid:
-            if self.header:
-                fid.readline()
-            for line in fid:
-                # Strip the line of potential whitespace.
-                line = line.strip()
-
-                # Split the line into fields.
-                line = line.split(self.sep)
-
-                # In case there are unnecessary fields we remove these.
-                line = line[:4]
-
-                # Get each field.
-                ind, father, mother, sex = line
-
-                # Strip fields in case there is whitespace surrounding.
-                ind = ind.strip()
-                father = father.strip()
-                mother = mother.strip()
-                sex = sex.strip()
-
-                # Create a "Record" object.
-                record = Record(ind, father, mother, sex)
-
-                yield record
-
-    def add_person(self, ind, sex):
-        '''
-        If a node with label `Person` and property `ind = [ ind ]` does not exist it will be created.
-        Whether or not this node existed, we will give it the property `sex = [ sex ]`.
-        '''
-
-        # TODO: consider whether to log everytime a node or edge is created, and when properties
-        # or labels are added to nodes or edges.
-        with self.driver.session() as session:
-            result = session.run("MERGE (person:Person {ind: $ind}) "
-                                 "SET person.sex = $sex", ind=ind, sex=sex)
-        return result
-
-    def add_child(self, child, parent):
-        '''
-        Add a "child" relationship. Steps:
-        * Find the `child` node
-        * If `parent` does not exist, create it
-        * Make a `[:is_child]` relation from `child` to `parent`
-
-        If `parent` is `na_id`, no relation nor node will be added.
-        '''
-
-	# ID '0' means the person does not exist. Relationship will not be added.
-        if parent == self.na_id:
-            return None
-
-        with self.driver.session() as session:
-            result = session.run("MATCH (child:Person {ind: $child})        "
-                                 "MERGE (parent:Person {ind: $parent})      "
-                                 "MERGE (child)-[:is_child]->(parent)       ", child=child, parent=parent)
-        return result
-
-    def add_parent(self, child, parent, relation):
-        '''
-        Add a "parent" relationship. Steps:
-        * Find the `child` node
-        * If `parent` does not exist, create it
-        * Make a relation from `parent` to `child`
-
-        If `parent` is `na_id`, no relation nor node will be added. The relation of `parent` to `child` is one of either
-        `is_parent`, `is_mother`, or `is_father`.
-        '''
-
-        assert relation in ['parent', 'mother', 'father'], 'Error: "relation" must be one of: "parent", "mother", or "father".'
-
-	# ID '0' means the person does not exist. Relationship will not be added.
-        if parent == self.na_id:
-            return None
-
-        with self.driver.session() as session:
-            result = session.run("MATCH (child:Person {ind: $child})        "
-                                 "MERGE (parent:Person {ind: $parent })     "
-                                 "MERGE (child)<-[:is_%s]-(parent)          " % relation, child=child, parent=parent, relation=relation)
-        return result
-
-    def populate_from_csv(self):
-        '''
-        Make a node for each individual, and make all relations. The relations made are of the type:
-        * `[:is_child]`
-        * `[:is_mother]`
-        * `[:is_father]`
-        * `[:is_parent]`
-        '''
-
-        csv_reader = self.csv_reader()
-        logging.info('Building database')
-        # Using tqdm progress bar.
-        with tqdm(total=self.n_records, desc='Progress') as pbar:
-            for record in tqdm(csv_reader):
-                ind = record.ind
-                father = record.father
-                mother = record.mother
-                sex = record.sex
-
-                # Add person to database, labelling the ID and sex.
-                self.add_person(ind, sex)
-                # Add child relationships.
-                self.add_child(ind, mother)
-                self.add_child(ind, father)
-                ## Add mother and father relationships.
-                self.add_parent(ind, mother, 'mother')
-                self.add_parent(ind, father, 'father')
-                ## Add parent relationships as well.
-                self.add_parent(ind, mother, 'parent')
-                self.add_parent(ind, father, 'parent')
-
-                # Increment progress bar iteration counter.
-                pbar.update()
 
     def load_csv(self):
         '''
