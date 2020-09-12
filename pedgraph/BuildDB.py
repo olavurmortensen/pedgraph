@@ -53,16 +53,17 @@ class BuildDB(object):
         * `[:is_parent]`
         '''
 
-        with driver.session() as session:
+        with self.driver.session() as session:
             result = session.run("LOAD CSV WITH HEADERS FROM $csv_file AS line      "
                                  "MERGE (person:Person {ind: line.ind})             "
-                                 "SET person.sex = $sex                             "
-                                 "MERGE (father:Person {ind: $line.father})         "
-                                 "MERGE (mother:Person {ind: $line.mother})         "
+                                 "SET person.sex = line.sex                         "
+                                 "MERGE (father:Person {ind: line.father})         "
+                                 "MERGE (mother:Person {ind: line.mother})         "
                                  "MERGE (person)-[:is_child]->(father)              "
                                  "MERGE (person)-[:is_child]->(mother)              "
                                  "MERGE (father)-[:is_father]->(person)             "
-                                 "MERGE (mother)-[:is_mother]->(person)             ", csv_file=self.csv)
+                                 "MERGE (mother)-[:is_mother]->(person)             "
+                                 "RETURN line                                       ", csv_file=self.csv)
 
     def label_founders(self):
         '''
