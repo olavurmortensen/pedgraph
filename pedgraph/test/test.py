@@ -11,6 +11,7 @@ from os import environ as env
 NEO4J_URI = env.get('NEO4J_URI')
 
 TEST_PED = 'pedgraph/test/test_data/test_tree.csv'
+RECON_PED = 'pedgraph/test/test_data/test_tree_reconstructed.csv'
 
 # If the NEO4J_URI environment variable is not defined, set it to the default.
 if NEO4J_URI is None:
@@ -30,6 +31,8 @@ class TestSum(unittest.TestCase):
         # The reconstructed genealogy of these two individuals should contain
         # all individuals in the database.
         recon_gen = ReconstructGenealogy(NEO4J_URI, probands=['9', '10'])
+
+        recon_gen.write_csv(RECON_PED)
 
         logging.info('Reading genealogy from CSV.')
         csv_gen = Genealogy()
