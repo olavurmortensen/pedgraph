@@ -30,12 +30,6 @@ class BuildDB(object):
         # Connect to the database.
         self.driver = GraphDatabase.driver(uri)
 
-        # Count number of records in CSV.
-        n_records = 0
-        for _ in self.csv_reader():
-            n_records += 1
-        self.n_records = n_records
-
         # Populate database with nodes (people) and edges (relations).
         self.load_csv()
 
