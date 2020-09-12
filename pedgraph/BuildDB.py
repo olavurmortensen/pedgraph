@@ -13,7 +13,7 @@ class BuildDB(object):
     also checks that there are not duplicate individuals.
     '''
 
-    def __init__(self, uri, csv, header=True, sep=',', na_id='0'):
+    def __init__(self, uri, csv, na_id='0'):
         '''
         Arguments:
         ----------
@@ -21,16 +21,10 @@ class BuildDB(object):
             URI for the Python Neo4j driver to connect to the database.
         csv :   String
             Path to CSV pedigree file.
-        header  :   Boolean
-            Whether the CSV has a header line or not.
-        sep :   String
-            Separator used in the CSV file.
         na_id :   String
             ID used for missing parents.
         '''
         self.csv = csv
-        self.header = header
-        self.sep = sep
         self.na_id = na_id
 
         # Connect to the database.
@@ -46,7 +40,8 @@ class BuildDB(object):
         self.n_records = n_records
 
         # Populate database with nodes (people) and edges (relations).
-        self.populate_from_csv()
+        #self.populate_from_csv()
+        self.load_csv()
 
         # Add labels to pedigree.
         self.label_founders()
@@ -161,6 +156,7 @@ class BuildDB(object):
         * `[:is_father]`
         * `[:is_parent]`
         '''
+
         csv_reader = self.csv_reader()
         logging.info('Building database')
         # Using tqdm progress bar.
@@ -185,6 +181,26 @@ class BuildDB(object):
 
                 # Increment progress bar iteration counter.
                 pbar.update()
+
+    def load_csv(self):
+        '''
+        Make a node for each individual, and make all relations. The relations made are of the type:
+        * `[:is_child]`
+        * `[:is_mother]`
+        * `[:is_father]`
+        * `[:is_parent]`
+        '''
+
+        with driver.session() as session:
+            result = session.run("LOAD CSV WITH HEADERS FROM $csv_file AS line      "
+                                 "MERGE (person:Person {ind: line.ind})             "
+                                 "SET person.sex = $sex                             "
+                                 "MERGE (father:Person {ind: $line.father})         "
+                                 "MERGE (mother:Person {ind: $line.mother})         "
+                                 "MERGE (person)-[:is_child]->(father)              "
+                                 "MERGE (person)-[:is_child]->(mother)              "
+                                 "MERGE (father)-[:is_father]->(person)             "
+                                 "MERGE (mother)-[:is_mother]->(person)             ", csv_file=self.csv)
 
     def label_founders(self):
         '''
