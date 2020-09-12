@@ -40,10 +40,14 @@ pip install -e .
 The easiest way to run the Neo4j database is via Docker:
 
 ```bash
-# Make a folder to store database dumps in.
-mkdir neo4j_data
+# Make a folder to store database dumps in, and to import files into Neo4j.
+mkdir neo4j_db_dump neo4j_file_import
 # Run database.
-docker run -d -p7474:7474 -p7687:7687 --env=NEO4J_AUTH=none neo4j --volume=neo4j_data:/data
+docker run -d \
+    -p7474:7474 -p7687:7687 \
+    --env=NEO4J_AUTH=none \
+    --volume=$(pwd)/neo4j_db_dump:/data --volume=$(pwd)/neo4j_file_import:/var/lib/neo4j/import/ \
+    neo4j
 ```
 
 ## Build database
