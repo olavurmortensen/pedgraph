@@ -30,9 +30,6 @@ class BuildDB(object):
         # Connect to the database.
         self.driver = GraphDatabase.driver(uri)
 
-        # An error will be raised if there are duplicate IDs.
-        self.assert_unique_inds()
-
         # Count number of records in CSV.
         n_records = 0
         for _ in self.csv_reader():
@@ -84,13 +81,6 @@ class BuildDB(object):
                 record = Record(ind, father, mother, sex)
 
                 yield record
-
-    def assert_unique_inds(self):
-        csv_reader = self.csv_reader()
-        # Get all the "ind" records in a list.
-        inds = [record.ind for record in csv_reader]
-        # This will raise an error if there are duplicate IDs.
-        assert len(inds) == len(set(inds)), 'Error: individual IDs in CSV are not unique: %s' % csv
 
     def add_person(self, ind, sex):
         '''
