@@ -32,7 +32,10 @@ class BuildDB(object):
 
         # Populate database with nodes (people) and edges (relations).
         self.load_csv()
-# Add labels to pedigree.  self.label_founders() self.label_leaves()
+
+        # Add labels to pedigree.
+        self.label_founders()
+        self.label_leaves()
 
         # Print some statistics.
         self.pedstats()
