@@ -51,8 +51,8 @@ class BuildDB(object):
         '''
 
         with self.driver.session() as session:
-            result = session.run("LOAD CSV WITH HEADERS FROM $csv_file AS line      "
-                                 "USING PERIODIC COMMIT 1000                        "
+            result = session.run("USING PERIODIC COMMIT 1000                        "
+                                 "LOAD CSV WITH HEADERS FROM $csv_file AS line      "
                                  "MERGE (person:Person {ind: line.ind})             "
                                  "SET person.sex = line.sex                         "
                                  "MERGE (father:Person {ind: line.father})         "
