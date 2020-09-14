@@ -54,7 +54,9 @@ class BuildDB(object):
         self.load_csv()
 
         # Add labels to pedigree.
+        logging.info('Labelling founder nodes.')
         self.label_founders()
+        logging.info('Labelling leaf nodes.')
         self.label_leaves()
 
         # Print some statistics.
@@ -89,6 +91,7 @@ class BuildDB(object):
 
             # Detach all connections to non-existent parent "na_id", and delete the "na_id" node.
             # NOTE: this could be avoided using some sort of if-statement above, but this is so easy.
+            logging.info('Detaching and deleting "null" node ind=%s.' % self.na_id)
             result = session.run('MATCH (p {ind: $na_id}) DETACH DELETE p', na_id=self.na_id)
 
     def label_founders(self):
