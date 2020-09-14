@@ -32,10 +32,7 @@ class BuildDB(object):
 
         # Populate database with nodes (people) and edges (relations).
         self.load_csv()
-
-        # Add labels to pedigree.
-        self.label_founders()
-        self.label_leaves()
+# Add labels to pedigree.  self.label_founders() self.label_leaves()
 
         # Print some statistics.
         self.pedstats()
@@ -55,6 +52,7 @@ class BuildDB(object):
 
         with self.driver.session() as session:
             result = session.run("LOAD CSV WITH HEADERS FROM $csv_file AS line      "
+                                 "USING PERIODIC COMMIT 1000                        "
                                  "MERGE (person:Person {ind: line.ind})             "
                                  "SET person.sex = line.sex                         "
                                  "MERGE (father:Person {ind: line.father})         "
