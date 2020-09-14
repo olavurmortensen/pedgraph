@@ -10,10 +10,10 @@ from os import environ as env
 # Get the URI to
 NEO4J_URI = env.get('NEO4J_URI')
 
+TEST_PED_DOCKER = 'file:///test_tree.csv'
+
 TEST_DATA_DIR = 'pedgraph/test/test_data/'
-TEST_PED = 'test_tree.csv'
-TEST_PED_LOCAL = TEST_DATA_DIR + TEST_PED
-TEST_PED_NEO4J = 'file:///' + TEST_PED
+TEST_PED_LOCAL = TEST_DATA_DIR + 'test_tree.csv'
 RECON_PED = TEST_DATA_DIR + 'test_tree_reconstructed.csv'
 
 # If the NEO4J_URI environment variable is not defined, set it to the default.
@@ -25,7 +25,7 @@ class TestSum(unittest.TestCase):
     def setUp(self):
         logging.info('Startup')
         logging.info('-------')
-        builder = BuildDB(NEO4J_URI, TEST_PED_NEO4J)
+        builder = BuildDB(NEO4J_URI, TEST_PED_DOCKER)
 
     def test_recon(self):
         logging.info('Reconstructing genealogy')
@@ -39,7 +39,7 @@ class TestSum(unittest.TestCase):
 
         logging.info('Reading genealogy from CSV.')
         csv_gen = Genealogy()
-        csv_gen.read_csv(TEST_PED)
+        csv_gen.read_csv(TEST_PED_LOCAL)
 
         # Collect IDs from both genealogies.
         recon_inds = [rec.ind for rec in recon_gen]
