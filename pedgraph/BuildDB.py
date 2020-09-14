@@ -30,6 +30,22 @@ class BuildDB(object):
         # Connect to the database.
         self.driver = GraphDatabase.driver(uri)
 
+
+        # Get a list of all database indexes.
+        with self.driver.session() as session:
+            result = session.run('CALL db.indexes')
+            indexes = result.values()
+
+        # If the list contains the 'index_ind' index, we will not create it.
+        index_names = [index[1] for index in indexes]
+        if 'index_ind' not in index_names:
+            logging.info('Creating an index "index_ind" on individual IDs.')
+            # The 'index_ind' index does not exist, so we will create it.
+            with self.driver.session() as session:
+                result = session.run('CREATE INDEX index_ind FOR (n:Person) ON (n.ind)')
+        else:
+            logging.info('Index "index_ind" already exists, will not create.')
+
         # Populate database with nodes (people) and edges (relations).
         self.load_csv()
 
@@ -39,6 +55,8 @@ class BuildDB(object):
 
         # Print some statistics.
         self.pedstats()
+
+        self.close()
 
     def close(self):
         # Close the connection to the database.
@@ -63,8 +81,7 @@ class BuildDB(object):
                                  "MERGE (person)-[:is_child]->(father)              "
                                  "MERGE (person)-[:is_child]->(mother)              "
                                  "MERGE (father)-[:is_father]->(person)             "
-                                 "MERGE (mother)-[:is_mother]->(person)             "
-                                 "RETURN line                                       ", csv_file=self.csv)
+                                 "MERGE (mother)-[:is_mother]->(person)             ", csv_file=self.csv)
 
             # Detach all connections to non-existent parent "na_id", and delete the "na_id" node.
             # NOTE: this could be avoided using some sort of if-statement above, but this is so easy.
