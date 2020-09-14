@@ -31,6 +31,9 @@ class BuildDB(object):
         self.driver = GraphDatabase.driver(uri)
 
 
+        # Create a constraint such that the "ind" property is unique.
+        # A constraint at the same time creates an index, which gives faster look-up.
+
         # Get a list of all database indexes.
         with self.driver.session() as session:
             result = session.run('CALL db.indexes')
@@ -42,7 +45,8 @@ class BuildDB(object):
             logging.info('Creating an index "index_ind" on individual IDs.')
             # The 'index_ind' index does not exist, so we will create it.
             with self.driver.session() as session:
-                result = session.run('CREATE INDEX index_ind FOR (n:Person) ON (n.ind)')
+                # Create an index on "ind" and constain it to be unique.
+                result = session.run('CREATE CONSTRAINT index_ind ON (p:Person) ASSERT p.ind IS UNIQUE')
         else:
             logging.info('Index "index_ind" already exists, will not create.')
 
