@@ -2,10 +2,13 @@
 
 from pedgraph.DataStructures import Record
 from neo4j import GraphDatabase
+from neo4j.exceptions import ClientError
 import logging, argparse
 from tqdm.auto import tqdm
 
 logging.basicConfig(level=logging.INFO)
+
+CSV_FIELDS = ['ind', 'father', 'mother', 'sex']
 
 class BuildDB(object):
     '''
@@ -50,6 +53,9 @@ class BuildDB(object):
         else:
             logging.info('Index "index_ind" already exists, will not create.')
 
+        # Check CSV file.
+        self.check_csv()
+
         # Populate database with nodes (people) and edges (relations).
         self.load_csv()
 
@@ -67,6 +73,28 @@ class BuildDB(object):
     def close(self):
         # Close the connection to the database.
         self.driver.close()
+
+    def check_csv(self):
+        # Read the entire CSV using a database query and return all lines.
+        with self.driver.session() as session:
+            result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line RETURN line', csv=self.csv)
+            # If the CSV can't be read, show an error log and raise the error.
+            try:
+                values = result.values()
+            except ClientError:
+                logging.error('CSV file could not be loaded into Neo4j: %s' % self.csv)
+                raise
+
+        assert len(values) > 0, 'Error: reading CSV returned 0 lines.'
+
+        # Get a single row.
+        single = values[0][0]
+        # Get the keys, corresponding to fields in the CSV.
+        keys = list(single.keys())
+
+        # Make sure all the needed fields are in the CSV.
+        for field in CSV_FIELDS:
+            assert field in keys, 'Error: CSV does not contain "%s" field.' % field
 
     def load_csv(self):
         '''
