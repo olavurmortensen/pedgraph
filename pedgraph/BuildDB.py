@@ -13,7 +13,7 @@ class BuildDB(object):
     also checks that there are not duplicate individuals.
     '''
 
-    def __init__(self, uri, csv, header=True, sep=',', na_id='0'):
+    def __init__(self, uri, csv, na_id='0'):
         '''
         Arguments:
         ----------
@@ -21,139 +21,54 @@ class BuildDB(object):
             URI for the Python Neo4j driver to connect to the database.
         csv :   String
             Path to CSV pedigree file.
-        header  :   Boolean
-            Whether the CSV has a header line or not.
-        sep :   String
-            Separator used in the CSV file.
         na_id :   String
             ID used for missing parents.
         '''
         self.csv = csv
-        self.header = header
-        self.sep = sep
         self.na_id = na_id
 
         # Connect to the database.
         self.driver = GraphDatabase.driver(uri)
 
-        # An error will be raised if there are duplicate IDs.
-        self.assert_unique_inds()
 
-        # Count number of records in CSV.
-        n_records = 0
-        for _ in self.csv_reader():
-            n_records += 1
-        self.n_records = n_records
+        # Create a constraint such that the "ind" property is unique.
+        # A constraint at the same time creates an index, which gives faster look-up.
+
+        # Get a list of all database indexes.
+        with self.driver.session() as session:
+            result = session.run('CALL db.indexes')
+            indexes = result.values()
+
+        # If the list contains the 'index_ind' index, we will not create it.
+        index_names = [index[1] for index in indexes]
+        if 'index_ind' not in index_names:
+            logging.info('Creating an index "index_ind" on individual IDs.')
+            # The 'index_ind' index does not exist, so we will create it.
+            with self.driver.session() as session:
+                # Create an index on "ind" and constain it to be unique.
+                result = session.run('CREATE CONSTRAINT index_ind ON (p:Person) ASSERT p.ind IS UNIQUE')
+        else:
+            logging.info('Index "index_ind" already exists, will not create.')
 
         # Populate database with nodes (people) and edges (relations).
-        self.populate_from_csv()
+        self.load_csv()
 
         # Add labels to pedigree.
+        logging.info('Labelling founder nodes.')
         self.label_founders()
+        logging.info('Labelling leaf nodes.')
         self.label_leaves()
 
         # Print some statistics.
         self.pedstats()
 
+        self.close()
+
     def close(self):
         # Close the connection to the database.
         self.driver.close()
 
-    def csv_reader(self):
-        '''
-        A generator that reads the CSV and yields records in `(ind, father, mother, sex)` tuples.
-        '''
-        with open(self.csv) as fid:
-            if self.header:
-                fid.readline()
-            for line in fid:
-                # Strip the line of potential whitespace.
-                line = line.strip()
-
-                # Split the line into fields.
-                line = line.split(self.sep)
-
-                # In case there are unnecessary fields we remove these.
-                line = line[:4]
-
-                # Get each field.
-                ind, father, mother, sex = line
-
-                # Strip fields in case there is whitespace surrounding.
-                ind = ind.strip()
-                father = father.strip()
-                mother = mother.strip()
-                sex = sex.strip()
-
-                # Create a "Record" object.
-                record = Record(ind, father, mother, sex)
-
-                yield record
-
-    def assert_unique_inds(self):
-        csv_reader = self.csv_reader()
-        # Get all the "ind" records in a list.
-        inds = [record.ind for record in csv_reader]
-        # This will raise an error if there are duplicate IDs.
-        assert len(inds) == len(set(inds)), 'Error: individual IDs in CSV are not unique: %s' % csv
-
-    def add_person(self, ind, sex):
-        '''
-        If a node with label `Person` and property `ind = [ ind ]` does not exist it will be created.
-        Whether or not this node existed, we will give it the property `sex = [ sex ]`.
-        '''
-
-        # TODO: consider whether to log everytime a node or edge is created, and when properties
-        # or labels are added to nodes or edges.
-        with self.driver.session() as session:
-            result = session.run("MERGE (person:Person {ind: $ind}) "
-                                 "SET person.sex = $sex", ind=ind, sex=sex)
-        return result
-
-    def add_child(self, child, parent):
-        '''
-        Add a "child" relationship. Steps:
-        * Find the `child` node
-        * If `parent` does not exist, create it
-        * Make a `[:is_child]` relation from `child` to `parent`
-
-        If `parent` is `na_id`, no relation nor node will be added.
-        '''
-
-	# ID '0' means the person does not exist. Relationship will not be added.
-        if parent == self.na_id:
-            return None
-
-        with self.driver.session() as session:
-            result = session.run("MATCH (child:Person {ind: $child})        "
-                                 "MERGE (parent:Person {ind: $parent})      "
-                                 "MERGE (child)-[:is_child]->(parent)       ", child=child, parent=parent)
-        return result
-
-    def add_parent(self, child, parent, relation):
-        '''
-        Add a "parent" relationship. Steps:
-        * Find the `child` node
-        * If `parent` does not exist, create it
-        * Make a relation from `parent` to `child`
-
-        If `parent` is `na_id`, no relation nor node will be added. The relation of `parent` to `child` is one of either
-        `is_parent`, `is_mother`, or `is_father`.
-        '''
-
-        assert relation in ['parent', 'mother', 'father'], 'Error: "relation" must be one of: "parent", "mother", or "father".'
-
-	# ID '0' means the person does not exist. Relationship will not be added.
-        if parent == self.na_id:
-            return None
-
-        with self.driver.session() as session:
-            result = session.run("MATCH (child:Person {ind: $child})        "
-                                 "MERGE (parent:Person {ind: $parent })     "
-                                 "MERGE (child)<-[:is_%s]-(parent)          " % relation, child=child, parent=parent, relation=relation)
-        return result
-
-    def populate_from_csv(self):
+    def load_csv(self):
         '''
         Make a node for each individual, and make all relations. The relations made are of the type:
         * `[:is_child]`
@@ -161,30 +76,23 @@ class BuildDB(object):
         * `[:is_father]`
         * `[:is_parent]`
         '''
-        csv_reader = self.csv_reader()
-        logging.info('Building database')
-        # Using tqdm progress bar.
-        with tqdm(total=self.n_records, desc='Progress') as pbar:
-            for record in tqdm(csv_reader):
-                ind = record.ind
-                father = record.father
-                mother = record.mother
-                sex = record.sex
 
-                # Add person to database, labelling the ID and sex.
-                self.add_person(ind, sex)
-                # Add child relationships.
-                self.add_child(ind, mother)
-                self.add_child(ind, father)
-                ## Add mother and father relationships.
-                self.add_parent(ind, mother, 'mother')
-                self.add_parent(ind, father, 'father')
-                ## Add parent relationships as well.
-                self.add_parent(ind, mother, 'parent')
-                self.add_parent(ind, father, 'parent')
+        with self.driver.session() as session:
+            result = session.run("USING PERIODIC COMMIT 1000                        "
+                                 "LOAD CSV WITH HEADERS FROM $csv_file AS line      "
+                                 "MERGE (person:Person {ind: line.ind})             "
+                                 "SET person.sex = line.sex                         "
+                                 "MERGE (father:Person {ind: line.father})         "
+                                 "MERGE (mother:Person {ind: line.mother})         "
+                                 "MERGE (person)-[:is_child]->(father)              "
+                                 "MERGE (person)-[:is_child]->(mother)              "
+                                 "MERGE (father)-[:is_father]->(person)             "
+                                 "MERGE (mother)-[:is_mother]->(person)             ", csv_file=self.csv)
 
-                # Increment progress bar iteration counter.
-                pbar.update()
+            # Detach all connections to non-existent parent "na_id", and delete the "na_id" node.
+            # NOTE: this could be avoided using some sort of if-statement above, but this is so easy.
+            logging.info('Detaching and deleting "null" node ind=%s.' % self.na_id)
+            result = session.run('MATCH (p {ind: $na_id}) DETACH DELETE p', na_id=self.na_id)
 
     def label_founders(self):
         '''

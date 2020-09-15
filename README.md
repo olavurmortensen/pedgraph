@@ -46,6 +46,7 @@ mkdir neo4j_db_dump neo4j_file_import
 docker run -d \
     -p7474:7474 -p7687:7687 \
     --env=NEO4J_AUTH=none \
+    --env=NEO4JLABS_PLUGINS='["graph-algorithms", "apoc"]' \
     --volume=$(pwd)/neo4j_db_dump:/data --volume=$(pwd)/neo4j_file_import:/var/lib/neo4j/import/ \
     neo4j
 ```

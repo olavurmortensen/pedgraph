@@ -11,11 +11,13 @@ env:
 
 before_install:
   - docker pull neo4j
+  - mkdir neo4j_file_import
+  - cp pedgraph/test/test_data/test_tree.csv neo4j_file_import
 
 install:
   - pip install -e .
 
 script:
-  - docker run -d -p7474:7474 -p7687:7687 --env=NEO4J_AUTH=none neo4j
+  - docker run -d -p7474:7474 -p7687:7687 --env=NEO4J_AUTH=none --volume=$(pwd)/neo4j_file_import:/var/lib/neo4j/import/ neo4j
   - sleep 20  # Wait for neo4j database to start up.
   - python pedgraph/test/test.py
