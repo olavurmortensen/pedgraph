@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from neo4j import GraphDatabase
-from pedgraph.BuildDB import BuildDB
+from pedgraph.BuildDB import BuildDB, AddNodeProperties
 from pedgraph.ReconstructGenealogy import ReconstructGenealogy
 from pedgraph.DataStructures import Genealogy, Record
 import unittest, logging
@@ -15,6 +15,8 @@ TEST_PED_DOCKER = 'file:///test_tree.csv'
 TEST_DATA_DIR = 'pedgraph/test/test_data/'
 TEST_PED_LOCAL = TEST_DATA_DIR + 'test_tree.csv'
 RECON_PED = TEST_DATA_DIR + 'test_tree_reconstructed.csv'
+
+TEST_PROPERTIES = 'file:///test_properties.csv'
 
 # If the NEO4J_URI environment variable is not defined, set it to the default.
 if NEO4J_URI is None:
@@ -30,7 +32,21 @@ class TestSum(unittest.TestCase):
 
         # Before we build, we wipe the database clean.
         with self.driver.session() as session:
+            # Delete all nodes and their relationships.
             result = session.run('MATCH (n) DETACH DELETE n')
+
+            # Delete all indexes.
+            result = session.run('CALL db.indexes')
+            values = result.values()
+
+            index_uniqueness = [(v[1], v[4]) for v in values]
+            for name, unique in index_uniqueness:
+                if unique == 'NONUNIQUE':
+                    logging.info('Deleting index %s.' % name)
+                    result = session.run('DROP INDEX %s' % name)
+                elif unique == 'UNIQUE':
+                    logging.info('Deleting constraint %s.' % name)
+                    result = session.run('DROP CONSTRAINT %s' % name)
 
         builder = BuildDB(NEO4J_URI, TEST_PED_DOCKER)
 
@@ -76,6 +92,12 @@ class TestSum(unittest.TestCase):
             self.assertTrue(recon_record.father == csv_record.father, 'Error: father does not match for record ind %s' % record_ind)
             self.assertTrue(recon_record.mother == csv_record.mother, 'Error: mother does not match for record ind %s' % record_ind)
             self.assertTrue(recon_record.sex == csv_record.sex, 'Error: sex does not match for record ind %s' % record_ind)
+
+    def test_addprop(self):
+        logging.info('Adding node property')
+        logging.info('------------------------')
+
+        AddNodeProperties(NEO4J_URI, TEST_PROPERTIES, 'Person')
 
     def tearDown(self):
         logging.info('-------')
