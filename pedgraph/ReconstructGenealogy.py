@@ -34,7 +34,7 @@ class ReconstructGenealogy(Genealogy):
             with open(probands_txt) as fid:
                 for line in fid:
                     line = line.strip()  # Remove any leading or trailing whitespace.
-                    inds.append(line)
+                    probands.append(line)
 
         self.probands = probands
 
