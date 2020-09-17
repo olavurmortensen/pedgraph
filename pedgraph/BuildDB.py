@@ -33,10 +33,10 @@ class BaseBuilder(object):
         # Close the connection to the database.
         self.driver.close()
 
-    def check_csv_basic(self, csv_columns):
+    def check_csv_basic(self, csv_columns=None):
         '''
         Check that the CSV (with headers) is not empty, and check that it contains all the necessary
-        columns. Also check that Neo4j is able to access the CSV file.
+        columns (if specified). Also check that Neo4j is able to access the CSV file.
         '''
         # Read the entire CSV using a database query and return all lines.
         with self.driver.session() as session:
@@ -57,9 +57,10 @@ class BaseBuilder(object):
 
         logging.info('Loaded CSV with columns: %s' % ','.join(keys))
 
-        # Make sure all the needed fields are in the CSV.
-        for field in csv_columns:
-            assert field in keys, 'Error: CSV does not contain "%s" field.' % field
+        if csv_columns is not None:
+            # Make sure all the needed fields are in the CSV.
+            for field in csv_columns:
+                assert field in keys, 'Error: CSV does not contain "%s" field.' % field
 
     def create_index(self, index_name, node_label, node_property, unique=False):
         '''
@@ -221,6 +222,83 @@ class BuildDB(BaseBuilder):
 
             result = session.run('MATCH ()-[r:is_father]->() RETURN r')
             logging.info('#is_father: %d' % len(result.values()))
+
+
+class AddNodeProperties(BaseBuilder):
+    '''
+    '''
+
+    def __init__(self, uri, csv, node_label, index_unique=False):
+        '''
+        Arguments:
+        ----------
+        uri :   String
+            URI for the Python Neo4j driver to connect to the database.
+        csv :   String
+            Path to CSV file.
+        node_label  :   String
+            Label of nodes to add property to. E.g. `Person` for `(:Person)` nodes.
+        index_unique    :   Boolean
+            Whether or not to create a uniqueness constraint on property.
+        '''
+        self.csv = csv
+        self.node_label = node_label
+        self.index_unique = index_unique
+
+        # Connect to the database.
+        self.driver = GraphDatabase.driver(uri)
+
+        # Check CSV file.
+        self.check_csv_basic()
+
+        # Populate database with nodes (people) and edges (relations).
+        self.load_csv()
+
+        # Print some statistics.
+        self.stats()
+
+        self.close()
+
+    def load_csv(self):
+        '''
+        '''
+
+        with self.driver.session() as session:
+            # Read the header of the file, i.e. the first row.
+            result = session.run('LOAD CSV FROM $csv AS line RETURN line LIMIT 1', csv=self.csv)
+            header = result.values()[0][0]
+
+            # The property to match the individuals by should be the first columns.
+            # The property to create should be the second.
+            match, prop_name = header
+
+            # Count the number of nodes that match.
+            result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line               '
+                    'MATCH (:%s {%s: line.%s}) RETURN count(*)' %(self.node_label, match, match), csv=self.csv)
+
+            n_matches = result.values()[0][0]
+
+            # Count number of lines in file.
+            result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line           '
+                    'RETURN count(*)', csv=self.csv)
+
+            n_rows = result.values()[0][0]
+
+            logging.info('%d out of %d rows in census CSV matched a record.' % (n_matches, n_rows))
+
+            # Create an index on the property. If this property has been used before, the index will
+            # alredy exist, and the call below will do nothing.
+            index_name = 'index_' + prop_name
+            self.create_index(index_name, prop_name, self.node_label, self.index_unique)
+
+            # Match all the nodes and add the properties.
+            result = session.run("USING PERIODIC COMMIT 1000                        "
+                    "LOAD CSV WITH HEADERS FROM $csv AS line      "
+                    "MATCH (node:%s {%s: line.%s})             "
+                    "MERGE (:%s {%s: line.%s, %s: line.%s})             "
+                    "RETURN count(*)                                 "
+                    %(self.node_label, match, match, node_label, match, match, prop_name, prop_name),
+                    csv=self.csv)
 
 
 
