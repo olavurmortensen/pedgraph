@@ -33,11 +33,28 @@ class BaseBuilder(object):
         # Close the connection to the database.
         self.driver.close()
 
+    def get_csv_header(self):
+        with self.driver.session() as session:
+            # Read the header of the file, i.e. the first row.
+            result = session.run('LOAD CSV FROM $csv AS line RETURN line LIMIT 1', csv=self.csv)
+            header = result.values()[0][0]
+        return header
+
     def check_csv_basic(self, csv_columns=None):
         '''
         Check that the CSV (with headers) is not empty, and check that it contains all the necessary
         columns (if specified). Also check that Neo4j is able to access the CSV file.
         '''
+
+        header = self.get_csv_header()
+
+        logging.info('Loaded CSV with header: ' + ','.join(header))
+
+        if csv_columns is not None:
+            # Make sure all the needed fields are in the CSV.
+            for field in csv_columns:
+                assert field in header, 'Error: CSV does not contain "%s" field.' % field
+
         # Read the entire CSV using a database query and return all lines.
         with self.driver.session() as session:
             result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line RETURN line', csv=self.csv)
@@ -50,17 +67,6 @@ class BaseBuilder(object):
 
         assert len(values) > 0, 'Error: reading CSV returned 0 lines.'
 
-        # Get a single row.
-        single = values[0][0]
-        # Get the keys, corresponding to fields in the CSV.
-        keys = list(single.keys())
-
-        logging.info('Loaded CSV with columns: %s' % ','.join(keys))
-
-        if csv_columns is not None:
-            # Make sure all the needed fields are in the CSV.
-            for field in csv_columns:
-                assert field in keys, 'Error: CSV does not contain "%s" field.' % field
 
     def create_index(self, index_name, node_label, node_property, unique=False):
         '''
