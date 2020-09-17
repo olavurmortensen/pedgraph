@@ -12,7 +12,7 @@ env:
 before_install:
   - docker pull neo4j
   - mkdir neo4j_file_import
-  - cp pedgraph/test/test_data/test_tree.csv neo4j_file_import
+  - cp pedgraph/test/test_data/* neo4j_file_import
 
 install:
   - pip install -e .
