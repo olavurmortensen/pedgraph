@@ -66,6 +66,9 @@ class BaseBuilder(object):
         Create an index on a property on nodes with a specific label, optionally with a
         uniqueness constraint. Indexing has huge performance benefits.
 
+        If an equivalent index already exists, or an index with the same name, nothing
+        will be done.
+
         Arguments:
         ----------
         index_name  :   String
@@ -77,6 +80,10 @@ class BaseBuilder(object):
         unique  :   Boolean
             Whether or not to create a uniqueness constraint on property `node_property`.
         '''
+
+        # When trying to create index/constraint, these errors will be ignored and no index will be created.
+        catch_errors = ['EquivalentSchemaRuleAlreadyExists', 'ConstraintAlreadyExists', 'ConstraintWithNameAlreadyExists']
+
         # The index does not exist, so we will create it.
         with self.driver.session() as session:
             # Create an index on "ind" and constain it to be unique.
@@ -92,7 +99,7 @@ class BaseBuilder(object):
                     result = session.run('CREATE INDEX %s FOR (p:%s) ON (p.%s)'
                                          % (index_name, node_label, node_property))
             except ClientError as err:
-                if err.title == 'ConstraintAlreadyExists':
+                if err.title in catch_errors:
                     logging.info('An index on (:%s {%s}) already exists, will not create.' %(node_label, node_property))
                 else:
                     raise
