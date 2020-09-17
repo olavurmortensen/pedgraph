@@ -257,11 +257,18 @@ class AddNodeProperties(BaseBuilder):
         # Check CSV file.
         self.check_csv_basic()
 
+        # Get the header of the CSV file.
+        self.header = self.get_csv_header()
+
+        # The property to match the individuals by should be the first columns.
+        # The property to create should be the second.
+        self.prop_match, self.prop_name = self.header
+
         # Populate database with nodes (people) and edges (relations).
         self.load_csv()
 
         # Print some statistics.
-        self.stats()
+        self.print_stats()
 
         self.close()
 
@@ -269,18 +276,15 @@ class AddNodeProperties(BaseBuilder):
         '''
         '''
 
-        with self.driver.session() as session:
-            # Read the header of the file, i.e. the first row.
-            result = session.run('LOAD CSV FROM $csv AS line RETURN line LIMIT 1', csv=self.csv)
-            header = result.values()[0][0]
+        prop_match = self.prop_match
+        prop_name = self.prop_name
+        node_label = self.node_label
 
-            # The property to match the individuals by should be the first columns.
-            # The property to create should be the second.
-            match, prop_name = header
+        with self.driver.session() as session:
 
             # Count the number of nodes that match.
             result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line               '
-                    'MATCH (:%s {%s: line.%s}) RETURN count(*)' %(self.node_label, match, match), csv=self.csv)
+                    'MATCH (:%s {%s: line.%s}) RETURN count(*)' %(node_label, prop_match, prop_match), csv=self.csv)
 
             n_matches = result.values()[0][0]
 
@@ -295,19 +299,30 @@ class AddNodeProperties(BaseBuilder):
             # Create an index on the property. If this property has been used before, the index will
             # alredy exist, and the call below will do nothing.
             index_name = 'index_' + prop_name
-            self.create_index(index_name, prop_name, self.node_label, self.index_unique)
+            self.create_index(index_name, prop_name, node_label, self.index_unique)
 
             # Match all the nodes and add the properties.
             result = session.run("USING PERIODIC COMMIT 1000                        "
                     "LOAD CSV WITH HEADERS FROM $csv AS line      "
                     "MATCH (node:%s {%s: line.%s})             "
-                    "MERGE (:%s {%s: line.%s, %s: line.%s})             "
+                    "SET node.%s = line.%s   "
                     "RETURN count(*)                                 "
-                    %(self.node_label, match, match, node_label, match, match, prop_name, prop_name),
+                    %(node_label, prop_match, prop_match, prop_name, prop_name),
                     csv=self.csv)
 
+            #n_processed = result.values()[0][0]
 
+            #logging.info('Processed %d lines of CSV file.' % n_processed)
 
+    def print_stats(self):
+        with self.driver.session() as session:
+            result = session.run('MATCH (p:%s) WHERE EXISTS (p.%s) RETURN p.%s' %(self.node_label, self.prop_name, self.prop_name), csv=self.csv)
+            values = result.values()
+
+        n_match = len(values)
+        prop_list = [v[0] for v in values]
+        prop_unique = set(prop_list)
+        logging.info('Added %d unique property values to %d different nodes.' % (len(prop_unique), n_match))
 
 if __name__ == "__main__":
     # Parse command-line arguments.
