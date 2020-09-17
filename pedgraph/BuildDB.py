@@ -323,22 +323,3 @@ class AddNodeProperties(BaseBuilder):
         prop_list = [v[0] for v in values]
         prop_unique = set(prop_list)
         logging.info('Added %d unique property values to %d different nodes.' % (len(prop_unique), n_match))
-
-if __name__ == "__main__":
-    # Parse command-line arguments.
-    parser = argparse.ArgumentParser(description='Build database, populating it with individuals and relations from a pedigree CSV.')
-
-    # Arguments for parser.
-    parser.add_argument('--uri', type=str, required=True, help='URI for the Python Neo4j driver to connect to the database.')
-    parser.add_argument('--csv', type=str, required=True, help='Path to CSV pedigree file.')
-    parser.add_argument('--header', type=bool, required=False, default=True, help='Whether or not the CSV has a header.')
-    parser.add_argument('--sep', type=str, required=False, default=',', help='Separator used in the CSV.')
-    parser.add_argument('--na_id', type=str, required=False, default='0', help='The ID used for missing parents.')
-
-    # Parse input arguments.
-    args = parser.parse_args()
-
-    # Call the class to build the database.
-    build_db = BuildDB(args.uri, args.csv, args.header, args.sep, args.na_id)
-    # Close the connection to the database.
-    build_db.close()
