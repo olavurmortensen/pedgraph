@@ -25,6 +25,13 @@ class TestSum(unittest.TestCase):
     def setUp(self):
         logging.info('Startup')
         logging.info('-------')
+
+        self.driver = GraphDatabase.driver(NEO4J_URI)
+
+        # Before we build, we wipe the database clean.
+        with self.driver.session() as session:
+            result = session.run('MATCH (n) DETACH DELETE n')
+
         builder = BuildDB(NEO4J_URI, TEST_PED_DOCKER)
 
     def test_recon(self):
@@ -73,6 +80,8 @@ class TestSum(unittest.TestCase):
     def tearDown(self):
         logging.info('-------')
         logging.info('Teardown')
+
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
