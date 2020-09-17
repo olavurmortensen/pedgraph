@@ -236,7 +236,7 @@ class AddNodeProperties(BaseBuilder):
     Add properties to nodes from a CSV file.
     '''
 
-    def __init__(self, uri, csv, node_label, index_unique=False):
+    def __init__(self, uri, csv, node_label, prop_type='String', index_unique=False):
         '''
         Arguments:
         ----------
@@ -246,12 +246,18 @@ class AddNodeProperties(BaseBuilder):
             Path to CSV file.
         node_label  :   String
             Label of nodes to add property to. E.g. `Person` for `(:Person)` nodes.
+        prop_type   :   String
+            Data type of property, one of: 'String', 'Integer' or 'Float'.
         index_unique    :   Boolean
             Whether or not to create a uniqueness constraint on property.
         '''
         self.csv = csv
         self.node_label = node_label
+        self.prop_type = prop_type
         self.index_unique = index_unique
+
+        self.prop_types = ['String', 'Integer', 'Float']
+        assert prop_type in self.prop_types, 'Error: "prop_type" must be one of: ' + ', '.join(self.prop_types)
 
         # Connect to the database.
         self.driver = GraphDatabase.driver(uri)
@@ -309,9 +315,9 @@ class AddNodeProperties(BaseBuilder):
             result = session.run("USING PERIODIC COMMIT 1000                        "
                     "LOAD CSV WITH HEADERS FROM $csv AS line      "
                     "MATCH (node:%s {%s: line.%s})             "
-                    "SET node.%s = line.%s   "
+                    "SET node.%s = to%s(line.%s)   "
                     "RETURN count(*)                                 "
-                    %(node_label, prop_match, prop_match, prop_name, prop_name),
+                    %(node_label, prop_match, prop_match, prop_name, self.prop_type, prop_name),
                     csv=self.csv)
 
     def print_stats(self):

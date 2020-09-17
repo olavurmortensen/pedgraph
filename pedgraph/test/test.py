@@ -16,7 +16,9 @@ TEST_DATA_DIR = 'pedgraph/test/test_data/'
 TEST_PED_LOCAL = TEST_DATA_DIR + 'test_tree.csv'
 RECON_PED = TEST_DATA_DIR + 'test_tree_reconstructed.csv'
 
-TEST_PROPERTIES = 'file:///test_properties.csv'
+TEST_PROPERTIES_STRING = 'file:///str_properties.csv'
+TEST_PROPERTIES_INT = 'file:///int_properties.csv'
+TEST_PROPERTIES_FLOAT = 'file:///float_properties.csv'
 
 # If the NEO4J_URI environment variable is not defined, set it to the default.
 if NEO4J_URI is None:
@@ -97,7 +99,14 @@ class TestSum(unittest.TestCase):
         logging.info('Adding node property')
         logging.info('------------------------')
 
-        AddNodeProperties(NEO4J_URI, TEST_PROPERTIES, 'Person')
+        logging.info('String property.')
+        AddNodeProperties(NEO4J_URI, TEST_PROPERTIES_STRING, 'Person')
+
+        logging.info('Integer property.')
+        AddNodeProperties(NEO4J_URI, TEST_PROPERTIES_INT, 'Person', 'Integer')
+
+        logging.info('Float property.')
+        AddNodeProperties(NEO4J_URI, TEST_PROPERTIES_FLOAT, 'Person', 'Float')
 
     def tearDown(self):
         logging.info('-------')
