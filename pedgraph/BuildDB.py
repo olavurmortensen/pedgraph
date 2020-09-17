@@ -100,7 +100,6 @@ class BaseBuilder(object):
                     result = session.run('CREATE CONSTRAINT %s ON (p:%s) '
                                          'ASSERT p.%s IS UNIQUE'
                                          % (index_name, node_label, node_property))
-                    logging.info('Creating an index "%s" on individual IDs.' % index_name)
                 else:
                     # Create an index.
                     result = session.run('CREATE INDEX %s FOR (p:%s) ON (p.%s)'
@@ -110,6 +109,8 @@ class BaseBuilder(object):
                     logging.info('An index on (:%s {%s}) already exists, will not create.' %(node_label, node_property))
                 else:
                     raise
+            finally:
+                logging.info('Created an index "%s" on (:%s {%s}) nodes.' % (index_name, node_label, node_property))
 
 
 class BuildDB(BaseBuilder):
@@ -232,6 +233,7 @@ class BuildDB(BaseBuilder):
 
 class AddNodeProperties(BaseBuilder):
     '''
+    Add properties to nodes from a CSV file.
     '''
 
     def __init__(self, uri, csv, node_label, index_unique=False):
@@ -274,6 +276,8 @@ class AddNodeProperties(BaseBuilder):
 
     def load_csv(self):
         '''
+        Match nodes by the first columns of the CSV file, and set the property
+        provided in the second column.
         '''
 
         prop_match = self.prop_match
@@ -299,7 +303,7 @@ class AddNodeProperties(BaseBuilder):
             # Create an index on the property. If this property has been used before, the index will
             # alredy exist, and the call below will do nothing.
             index_name = 'index_' + prop_name
-            self.create_index(index_name, prop_name, node_label, self.index_unique)
+            self.create_index(index_name, node_label, prop_name, self.index_unique)
 
             # Match all the nodes and add the properties.
             result = session.run("USING PERIODIC COMMIT 1000                        "
@@ -309,10 +313,6 @@ class AddNodeProperties(BaseBuilder):
                     "RETURN count(*)                                 "
                     %(node_label, prop_match, prop_match, prop_name, prop_name),
                     csv=self.csv)
-
-            #n_processed = result.values()[0][0]
-
-            #logging.info('Processed %d lines of CSV file.' % n_processed)
 
     def print_stats(self):
         with self.driver.session() as session:
