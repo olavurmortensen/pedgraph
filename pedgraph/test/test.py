@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from neo4j import GraphDatabase
-from pedgraph.BuildDB import BuildDB, AddNodeProperties
+from pedgraph.BuildDB import BuildDB, AddNodeProperties, AddNodeLabels
 from pedgraph.ReconstructGenealogy import ReconstructGenealogy
 from pedgraph.DataStructures import Genealogy, Record
 import unittest, logging
@@ -19,6 +19,8 @@ RECON_PED = TEST_DATA_DIR + 'test_tree_reconstructed.csv'
 TEST_PROPERTIES_STRING = 'file:///str_properties.csv'
 TEST_PROPERTIES_INT = 'file:///int_properties.csv'
 TEST_PROPERTIES_FLOAT = 'file:///float_properties.csv'
+
+TEST_LABELS = 'file:///label_nodes.csv'
 
 # If the NEO4J_URI environment variable is not defined, set it to the default.
 if NEO4J_URI is None:
@@ -127,6 +129,24 @@ class TestSum(unittest.TestCase):
             for ind, prop in values:
                 expected_prop = int_props_dict[ind]
                 assert prop == expected_prop, 'Error: property for person %s does not match (expected "%s", got "%s")' %(ind, expected_prop, prop)
+
+    def test_addlabel(self):
+        logging.info('Adding node labels')
+        logging.info('------------------------')
+
+        # Person IDs.
+        # NOTE: these could also be read directly from the CSV
+        # via a LOAD CSV query.
+        inds = ['1', '2', '3', '4']
+
+        # Create a new label.
+        new_label = 'TestLabel'
+        AddNodeLabels(NEO4J_URI, TEST_LABELS, 'Person', new_label)
+
+        with self.driver.session() as session:
+            result = session.run('MATCH (p:%s) RETURN count(*)' % new_label)
+            label_count = result.values()[0][0]
+            assert label_count == len(inds), 'Error: expected %d labelled nodes but found %d.' %(len(inds), label_count)
 
 
     def tearDown(self):

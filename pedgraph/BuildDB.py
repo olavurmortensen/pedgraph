@@ -243,7 +243,9 @@ class AddNodeProperties(BaseBuilder):
         uri :   String
             URI for the Python Neo4j driver to connect to the database.
         csv :   String
-            Path to CSV file.
+            Path to CSV file. The name of the columns correspond to properties; the first column
+            is the property to match, and a property will be created with the name of the second
+            column.
         node_label  :   String
             Label of nodes to add property to. E.g. `Person` for `(:Person)` nodes.
         prop_type   :   String
@@ -329,3 +331,81 @@ class AddNodeProperties(BaseBuilder):
         prop_list = [v[0] for v in values]
         prop_unique = set(prop_list)
         logging.info('Added %d unique property values to %d different nodes.' % (len(prop_unique), n_match))
+
+
+class AddNodeLabels(BaseBuilder):
+    '''
+    Add labels to nodes from a CSV file.
+    '''
+
+    def __init__(self, uri, csv, match_label, new_label):
+        '''
+        Arguments:
+        ----------
+        uri :   String
+            URI for the Python Neo4j driver to connect to the database.
+        csv :   String
+            Path to CSV file. The name of the first (and only) column should be the name
+            of the property to match.
+        match_label  :   String
+            Label of nodes to match. E.g. `Person` for `(:Person)` nodes.
+        new_label  :   String
+            Label to create, for example `Proband` to create `(:Person:Proband)` nodes.
+        '''
+        self.csv = csv
+        self.match_label = match_label
+        self.new_label = new_label
+
+        # Connect to the database.
+        self.driver = GraphDatabase.driver(uri)
+
+        # Check CSV file.
+        self.check_csv_basic()
+
+        # Get the header of the CSV file.
+        self.header = self.get_csv_header()
+
+        # The property to match the individuals by should be the first column.
+        self.prop_match = self.header[0]
+
+        # Populate database with nodes (people) and edges (relations).
+        self.load_csv()
+
+        self.close()
+
+    def load_csv(self):
+        '''
+        '''
+
+        prop_match = self.prop_match
+        match_label = self.match_label
+        new_label = self.new_label
+
+        with self.driver.session() as session:
+
+            # Count the number of nodes that match.
+            result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line               '
+                    'MATCH (:%s {%s: line.%s}) RETURN count(*)' %(match_label, prop_match, prop_match), csv=self.csv)
+
+            n_matches = result.values()[0][0]
+
+            # Count number of lines in file.
+            result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line           '
+                    'RETURN count(*)', csv=self.csv)
+
+            n_rows = result.values()[0][0]
+
+            logging.info('%d out of %d rows in census CSV matched a record.' % (n_matches, n_rows))
+
+            # Match all the nodes and add the properties.
+            result = session.run("USING PERIODIC COMMIT 1000                        "
+                    "LOAD CSV WITH HEADERS FROM $csv AS line      "
+                    "MATCH (node:%s {%s: line.%s})             "
+                    "SET node:%s                     "
+                    "RETURN count(*)                                 "
+                    %(match_label, prop_match, prop_match, new_label),
+                    csv=self.csv)
+
+            result = session.run('MATCH (p:%s) RETURN count(*)' % new_label)
+            labels_created = result.values()[0][0]
+            logging.info('Added label "%s to %d nodes.' % (new_label, labels_created))
