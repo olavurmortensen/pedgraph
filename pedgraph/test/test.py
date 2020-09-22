@@ -99,6 +99,17 @@ class TestSum(unittest.TestCase):
         logging.info('Adding node property')
         logging.info('------------------------')
 
+        # The expected values of the properties.
+        # NOTE: these could also be read directly from the CSV
+        # via a LOAD CSV query.
+        inds = ['1', '2', '3', '4']
+        str_props = ['a', 'b', 'a', 'b']
+        str_props_dict = dict(zip(inds, str_props))
+        int_props = [1, 2, 1, 0]
+        int_props_dict = dict(zip(inds, int_props))
+        float_props = [1.5, 2.1, 1.5, 0.5]
+        float_props_dict = dict(zip(inds, float_props))
+
         logging.info('String property.')
         AddNodeProperties(NEO4J_URI, TEST_PROPERTIES_STRING, 'Person')
 
@@ -107,6 +118,16 @@ class TestSum(unittest.TestCase):
 
         logging.info('Float property.')
         AddNodeProperties(NEO4J_URI, TEST_PROPERTIES_FLOAT, 'Person', 'Float')
+
+        # Test that the int property matches the expected.
+        # NOTE: could test all properties.
+        with self.driver.session() as session:
+            result = session.run('UNWIND $inds AS ind MATCH (p:Person {ind: ind}) RETURN p.ind, p.int_prop', inds=inds)
+            values = result.values()
+            for ind, prop in values:
+                expected_prop = int_props_dict[ind]
+                assert prop == expected_prop, 'Error: property for person %s does not match (expected "%s", got "%s")' %(ind, expected_prop, prop)
+
 
     def tearDown(self):
         logging.info('-------')
