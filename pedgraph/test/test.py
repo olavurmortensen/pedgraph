@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from neo4j import GraphDatabase
-from pedgraph.BuildDB import BuildDB, AddNodeProperties, AddNodeLabels
+from pedgraph.BuildDB import BuildDB, AddNodeProperties, AddNodeLabels, AddNewNodes
 from pedgraph.ReconstructGenealogy import ReconstructGenealogy
 from pedgraph.DataStructures import Genealogy, Record
 import unittest, logging
@@ -21,6 +21,7 @@ TEST_PROPERTIES_INT = 'file:///int_properties.csv'
 TEST_PROPERTIES_FLOAT = 'file:///float_properties.csv'
 
 TEST_LABELS = 'file:///label_nodes.csv'
+TEST_NODES = 'file:///create_nodes.csv'
 
 # If the NEO4J_URI environment variable is not defined, set it to the default.
 if NEO4J_URI is None:
@@ -147,6 +148,25 @@ class TestSum(unittest.TestCase):
             result = session.run('MATCH (p:%s) RETURN count(*)' % new_label)
             label_count = result.values()[0][0]
             assert label_count == len(inds), 'Error: expected %d labelled nodes but found %d.' %(len(inds), label_count)
+
+    def test_addnodes(self):
+        logging.info('Adding new node objects')
+        logging.info('------------------------')
+
+        # Fake RSIDs.
+        # NOTE: these could also be read directly from the CSV
+        # via a LOAD CSV query.
+        rsid = ['1', '2', '3', '4']
+
+        # Create a new label.
+        new_label = 'Phenotype'
+        AddNewNodes(NEO4J_URI, TEST_NODES, new_label)
+
+        # Check that the number of created nodes matches the expected.
+        with self.driver.session() as session:
+            result = session.run('MATCH (p:%s) RETURN count(*)' % new_label)
+            label_count = result.values()[0][0]
+            assert label_count == len(rsid), 'Error: expected %d (:%s) nodes but found %d.' %(len(rsid), new_label, label_count)
 
 
     def tearDown(self):

@@ -409,3 +409,85 @@ class AddNodeLabels(BaseBuilder):
             result = session.run('MATCH (p:%s) RETURN count(*)' % new_label)
             labels_created = result.values()[0][0]
             logging.info('Added label "%s to %d nodes.' % (new_label, labels_created))
+
+class AddNewNodes(BaseBuilder):
+    '''
+    Add new nodes from a CSV file.
+    '''
+
+    def __init__(self, uri, csv, node_label):
+        '''
+        Arguments:
+        ----------
+        uri :   String
+            URI for the Python Neo4j driver to connect to the database.
+        csv :   String
+            Path to CSV file. The name of the first (and only) column of the CSV will
+            become the unique ID of the nodes.
+        node_label  :   String
+            Label of the nodes. E.g. `Phenotype` for `(:Phenotype)` nodes.
+        '''
+        self.csv = csv
+        self.node_label = node_label
+
+        # Connect to the database.
+        self.driver = GraphDatabase.driver(uri)
+
+        # Check CSV file.
+        self.check_csv_basic()
+
+        # Get the header of the CSV file.
+        self.header = self.get_csv_header()
+
+        # The property to match the individuals by should be the first columns.
+        # The property to create should be the second.
+        self.id_name = self.header[0]
+
+        # Populate database with nodes (people) and edges (relations).
+        self.load_csv()
+
+        self.close()
+
+    def load_csv(self):
+        '''
+        '''
+
+        id_name = self.id_name
+        node_label = self.node_label
+
+        with self.driver.session() as session:
+
+            # Count the number of nodes that match.
+            result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line               '
+                    'MATCH (:%s {%s: line.%s}) RETURN count(*)' %(node_label, id_name, id_name), csv=self.csv)
+
+            n_matches = result.values()[0][0]
+
+            logging.info('%d records in the CSV already match a node.' % n_matches)
+
+            # Count number of lines in file.
+            result = session.run('LOAD CSV WITH HEADERS FROM $csv AS line           '
+                    'RETURN count(*)', csv=self.csv)
+
+            n_rows = result.values()[0][0]
+
+            logging.info('Reading from CSV with %d rows.' % n_rows)
+
+            # Create an index and a uniqueness constraint on the property. If this property has been used
+            #before, the index will alredy exist, and the call below will do nothing.
+            index_name = 'index_' + id_name
+            self.create_index(index_name, node_label, id_name, True)
+
+            # Match all the nodes and add the properties.
+            result = session.run("USING PERIODIC COMMIT 1000                        "
+                    "LOAD CSV WITH HEADERS FROM $csv AS line      "
+                    "MERGE (node:%s {%s: line.%s})             "
+                    "RETURN count(*)                                 "
+                    %(node_label, id_name, id_name),
+                    csv=self.csv)
+
+            # Forcing evaluation of above query.
+            _ = result.values()
+
+
+
