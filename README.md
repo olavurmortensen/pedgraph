@@ -1,4 +1,4 @@
-# PedGraph -- Multilayer networks for pedigree analysis [WIP]
+# PedGraph -- Multilayer networks for pedigree analysis
 
 [![Travis CI build](https://api.travis-ci.org/olavurmortensen/pedgraph.svg?branch=master&status=passed)](https://travis-ci.org/github/olavurmortensen/pedgraph) [![Docker build](https://img.shields.io/badge/Docker%20build-Available-informational)](https://hub.docker.com/repository/docker/olavurmortensen/pedgraph)
 
